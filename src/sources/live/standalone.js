@@ -49,7 +49,6 @@ function openSkyError(response) {
   return error;
 }
 
-/** Direct upstream live aircraft routes for static hosting. */
 export function createOpenSkySource({
   fetchImpl = defaultFetch,
   now = () => Date.now(),
@@ -59,14 +58,13 @@ export function createOpenSkySource({
     async getSnapshot(query = {}, { signal } = {}) {
       const params = new URLSearchParams();
       if (Number.isFinite(query.latitude) && Number.isFinite(query.longitude)) {
-        // OpenSky bbox format: lamin, lomin, lamax, lomax
         const delta = 2.5;
         params.set('lamin', (query.latitude - delta).toFixed(4));
         params.set('lomin', (query.longitude - delta).toFixed(4));
         params.set('lamax', (query.latitude + delta).toFixed(4));
         params.set('lomax', (query.longitude + delta).toFixed(4));
       }
-      const targetUrl = `https://opensky-network.org/api/states/all${params.size ? '?' + params : ''}`;
+      const targetUrl = `/api/opensky${params.size ? '?' + params : ''}`;
       const { response, payload } = await readResponse(
         fetchImpl,
         targetUrl,
@@ -88,7 +86,7 @@ export function createOpenSkySource({
     async getTrack(reference, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://opensky-network.org/api/tracks/all?icao24=' + encodeURIComponent(reference),
+        '/api/opensky-track?icao24=' + encodeURIComponent(reference),
         { signal },
         'OpenSky',
       );
@@ -103,7 +101,7 @@ export function createOpenSkySource({
         throw new LiveSourceError('unsupported', 'Enrichment unavailable');
       const { response, payload } = await readResponse(
         fetchImpl,
-        `https://api.adsbdb.com/v0/${query.kind}/${encodeURIComponent(query.id)}`,
+        `/api/adsbdb/${query.kind}/${encodeURIComponent(query.id)}`,
         { signal },
         'adsbdb',
       );
@@ -122,7 +120,7 @@ export function createAdsbLolSource({
     async getIdentities(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://api.adsb.lol/v2/mil',
+        '/api/adsblol/mil',
         { signal },
         'adsb.lol',
       );
@@ -132,7 +130,7 @@ export function createAdsbLolSource({
     async getSnapshot(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://api.adsb.lol/v2/mil',
+        '/api/adsblol/mil',
         { signal },
         'adsb.lol',
       );
@@ -150,7 +148,7 @@ export function createAdsbLolSource({
     async getTrack(reference, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://api.adsb.lol/v2/point/trace/' + encodeURIComponent(reference),
+        '/api/adsblol/trace?hex=' + encodeURIComponent(reference),
         { signal },
         'adsb.lol',
       );
