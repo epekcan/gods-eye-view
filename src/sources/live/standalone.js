@@ -19,7 +19,7 @@ const header = (response, name) => response.headers?.get?.(name);
 function openSkyError(response) {
   const error = httpError(response, 'OpenSky');
   if (response.status === 429) {
-    error.message = 'OpenSky rate limited';
+    error.message = 'OpenSky hız sınırı (rate limit)';
   } else {
     error.message = `OpenSky HTTP ${response.status}`;
   }
@@ -33,13 +33,22 @@ export function createOpenSkySource({
   return {
     label: 'OpenSky Network',
     async getSnapshot(query = {}, { signal } = {}) {
-      // CORS proxy üzerinden OpenSky verisini çeker
-      const proxyBase = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = encodeURIComponent('https://opensky-network.org/api/states/all');
+      const params = new URLSearchParams();
+      if (Number.isFinite(query.latitude) && Number.isFinite(query.longitude)) {
+        const delta = 3.0;
+        params.set('lamin', (query.latitude - delta).toFixed(4));
+        params.set('lomin', (query.longitude - delta).toFixed(4));
+        params.set('lamax', (query.latitude + delta).toFixed(4));
+        params.set('lomax', (query.longitude + delta).toFixed(4));
+      }
       
+      // Güvenilir hızlı CORS tüneli
+      const targetUrl = `https://opensky-network.org/api/states/all${params.size ? '?' + params : ''}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
       const { response, payload } = await readResponse(
         fetchImpl,
-        `${proxyBase}${targetUrl}`,
+        proxyUrl,
         { signal },
         'OpenSky',
       );
@@ -54,11 +63,11 @@ export function createOpenSkySource({
       };
     },
     async getTrack(reference, { signal } = {}) {
-      const proxyBase = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = encodeURIComponent('https://opensky-network.org/api/tracks/all?icao24=' + reference);
+      const targetUrl = `https://opensky-network.org/api/tracks/all?icao24=${reference}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
       const { response, payload } = await readResponse(
         fetchImpl,
-        `${proxyBase}${targetUrl}`,
+        proxyUrl,
         { signal },
         'OpenSky',
       );
@@ -90,11 +99,10 @@ export function createAdsbLolSource({
   return {
     label: 'adsb.lol',
     async getIdentities(_query = {}, { signal } = {}) {
-      const proxyBase = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = encodeURIComponent('https://api.adsb.lol/v2/mil');
+      // adsb.lol doğrudan tarayıcı CORS isteklerine açıktır
       const { response, payload } = await readResponse(
         fetchImpl,
-        `${proxyBase}${targetUrl}`,
+        'https://api.adsb.lol/v2/mil',
         { signal },
         'adsb.lol',
       );
@@ -102,11 +110,9 @@ export function createAdsbLolSource({
       return readsbIdentities(payload);
     },
     async getSnapshot(_query = {}, { signal } = {}) {
-      const proxyBase = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = encodeURIComponent('https://api.adsb.lol/v2/mil');
       const { response, payload } = await readResponse(
         fetchImpl,
-        `${proxyBase}${targetUrl}`,
+        'https://api.adsb.lol/v2/mil',
         { signal },
         'adsb.lol',
       );
@@ -122,11 +128,9 @@ export function createAdsbLolSource({
       };
     },
     async getTrack(reference, { signal } = {}) {
-      const proxyBase = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = encodeURIComponent('https://api.adsb.lol/v2/point/trace/' + reference);
       const { response, payload } = await readResponse(
         fetchImpl,
-        `${proxyBase}${targetUrl}`,
+        `https://api.adsb.lol/v2/point/trace/${encodeURIComponent(reference)}`,
         { signal },
         'adsb.lol',
       );
