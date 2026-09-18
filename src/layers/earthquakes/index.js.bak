@@ -28,7 +28,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
     id: 'earthquakes',
     name: 'Depremler',
     icon: '🌋',
-    source: 'USGS',
+    source: 'Kandilli / AFAD',
     updateInterval: 60000,
 
     init(viewer) {
@@ -98,11 +98,17 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
             new Cesium.Entity({
               id: `earthquake:${stableId}`,
               position,
+              point: {
+                pixelSize: Math.max(6, Math.min(18, mag * 2.5)),
+                color: color.withAlpha(0.9),
+                outlineColor: Cesium.Color.WHITE,
+                outlineWidth: 1.5,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              },
               ellipse: {
-                // Static axes — see the module header. A CallbackProperty here
-                // re-tessellates the clamped ground geometry every frame.
-                semiMajorAxis: baseRadius,
-                semiMinorAxis: baseRadius,
+                semiMajorAxis: Math.max(baseRadius, 15000),
+                semiMinorAxis: Math.max(baseRadius, 15000),
                 material: new Cesium.ColorMaterialProperty(
                   color.withAlpha(fillAlpha),
                 ),
@@ -112,7 +118,6 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
                 heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
               },
               properties: {
-                // Analyst seam (additive): the USGS event id (e.g. "us7000abcd").
                 usgsId,
                 mag,
                 place,
@@ -148,7 +153,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
         _count = count;
         _lastUpdate = Date.now();
         _lastError = null;
-        console.log(`[Data:Earthquakes] Updated: ${_count} events (M2.5+)`);
+        console.log(`[Data:Earthquakes] Updated: ${_count} events (M1.0+)`);
         return true;
       } catch (e) {
         if (request.signal.aborted || _request !== request || !_enabled)

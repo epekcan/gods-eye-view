@@ -2,7 +2,7 @@ import * as Cesium from 'cesium';
 
 /**
  * MTA Diri Fay Hatları Katmanı
- * MTA GeoWebCache (EPSG:3857) karo şablonu üzerinden doğrudan render eder.
+ * MTA Yerbilimleri Harita Görüntüleyici WMS servisi üzerinden doğrudan render eder.
  */
 export function createMtaFaultsLayer() {
   let _viewer = null;
@@ -20,12 +20,16 @@ export function createMtaFaultsLayer() {
     async init(viewer) {
       _viewer = viewer;
 
-      // GeoWebCache ve EPSG:3857 standart tile grid sağlayıcısı
-      const provider = new Cesium.UrlTemplateImageryProvider({
-        url: '/mta-wms?service=WMS&request=GetMap&layers=mta:DRYGEO2&styles=&format=image/png&transparent=true&version=1.1.1&srs=EPSG:3857&width=256&height=256&bbox={westProjected},{southProjected},{eastProjected},{northProjected}',
-        tilingScheme: new Cesium.WebMercatorTilingScheme(),
-        maximumLevel: 18,
-        enablePickFeatures: false,
+      // Doğrudan genel WMS uç noktasına bağlanır
+      const provider = new Cesium.WebMapServiceImageryProvider({
+        url: 'https://yerbilimleri.mta.gov.tr/geoserver/mta/wms',
+        layers: 'mta:DRYGEO2',
+        parameters: {
+          transparent: 'true',
+          format: 'image/png',
+          version: '1.1.1',
+          srs: 'EPSG:4326',
+        },
       });
 
       _imageryLayer = viewer.imageryLayers.addImageryProvider(provider);

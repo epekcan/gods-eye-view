@@ -47,8 +47,6 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
 
     enable(viewer) {
       _enabled = true;
-      // No continuous-render hold: the discs are static geometry now, so the
-      // layer has no per-frame animator to keep the render loop alive for.
       if (_dataSource) _dataSource.show = true;
       overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, true);
     },
@@ -90,19 +88,25 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
           const baseRadius = Math.pow(2, mag) * 1000;
           const color = depthColor(depthKm || 0);
           const isSignificant = mag >= 5.0;
-          const fillAlpha = isSignificant ? 0.4 : 0.3;
-          const outlineAlpha = isSignificant ? 1.0 : 0.8;
+          const fillAlpha = isSignificant ? 0.45 : 0.35;
+          const outlineAlpha = isSignificant ? 1.0 : 0.85;
 
           const position = Cesium.Cartesian3.fromDegrees(lon, lat);
           nextEntities.push(
             new Cesium.Entity({
               id: `earthquake:${stableId}`,
               position,
+              point: {
+                pixelSize: Math.max(8, Math.min(24, mag * 3.2)),
+                color: color.withAlpha(0.95),
+                outlineColor: Cesium.Color.WHITE,
+                outlineWidth: 2,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              },
               ellipse: {
-                // Static axes — see the module header. A CallbackProperty here
-                // re-tessellates the clamped ground geometry every frame.
-                semiMajorAxis: baseRadius,
-                semiMinorAxis: baseRadius,
+                semiMajorAxis: Math.max(baseRadius, 25000),
+                semiMinorAxis: Math.max(baseRadius, 25000),
                 material: new Cesium.ColorMaterialProperty(
                   color.withAlpha(fillAlpha),
                 ),
@@ -112,7 +116,6 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
                 heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
               },
               properties: {
-                // Analyst seam (additive): the USGS event id (e.g. "us7000abcd").
                 usgsId,
                 mag,
                 place,
