@@ -1,0 +1,97 @@
+import * as Cesium from 'cesium';
+import { BIKESHARE_SELECTED_OVERLAY_SOURCE_ID } from './policy.js';
+
+export function createLifecycle({
+  state: layerState,
+  services,
+  parts,
+  source,
+}) {
+  const methods = {
+    /**
+     * İBB Şehir Haritası katmanını ilklendirir.
+     * @param {Cesium.Viewer} viewer - Cesium viewer örneği.
+     */
+    init(viewer) {
+      layerState._viewer = viewer;
+      layerState._enabled = false;
+      layerState._count = 0;
+      layerState._lastUpdate = null;
+      layerState._loading = false;
+      layerState._error = null;
+      layerState._ibbImageryLayer = null;
+
+      layerState._overlayHost?.setVisible?.(
+        BIKESHARE_SELECTED_OVERLAY_SOURCE_ID,
+        false,
+      );
+
+      console.log('[Data:IBB] İBB Şehir Haritası katmanı hazırlandı.');
+    },
+
+    /**
+     * İBB Şehir Haritası WMS / Tile servisini Cesium sahnesine ekler.
+     * @param {Cesium.Viewer} viewer - Cesium viewer örneği.
+     */
+    enable(viewer) {
+      layerState._viewer = viewer;
+      layerState._enabled = true;
+      layerState._error = null;
+
+      if (layerState._ibbImageryLayer) {
+        layerState._ibbImageryLayer.show = true;
+        layerState._lastUpdate = Date.now();
+        return;
+      }
+
+      try {
+        layerState._loading = true;
+
+        // İBB Şehir Haritası Resmi WMS Karo Servisi Entegrasyonu
+        const provider = new Cesium.UrlTemplateImageryProvider({
+          url: 'https://sehirharitasi.ibb.gov.tr/geoserver/webgis/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=webgis:sehir_haritasi&STYLES=&SRS=EPSG:3857&BBOX={westDegrees},{southDegrees},{eastDegrees},{northDegrees}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE',
+          maximumLevel: 19,
+          credit: 'İstanbul Büyükşehir Belediyesi CBS',
+        });
+
+        layerState._ibbImageryLayer = viewer.imageryLayers.addImageryProvider(provider);
+        layerState._ibbImageryLayer.alpha = 0.88;
+        layerState._count = 1;
+        layerState._lastUpdate = Date.now();
+        layerState._loading = false;
+      } catch (err) {
+        console.warn('[Data:IBB] Harita yükleme hatası:', err);
+        layerState._error = String(err.message || err);
+        layerState._loading = false;
+      }
+    },
+
+    /**
+     * İBB Şehir Haritası katmanını gizler.
+     * @param {Cesium.Viewer} viewer - Cesium viewer örneği.
+     */
+    disable(viewer) {
+      layerState._enabled = false;
+      if (layerState._ibbImageryLayer) {
+        layerState._ibbImageryLayer.show = false;
+      }
+      layerState._count = 0;
+      layerState._loading = false;
+    },
+
+    /**
+     * Katmanı tamamen kaldırır ve belleği temizler.
+     * @param {Cesium.Viewer} viewer - Cesium viewer örneği.
+     */
+    destroy(viewer) {
+      this.disable(viewer);
+      if (layerState._ibbImageryLayer && viewer?.imageryLayers) {
+        viewer.imageryLayers.remove(layerState._ibbImageryLayer, true);
+        layerState._ibbImageryLayer = null;
+      }
+      layerState._viewer = null;
+    },
+  };
+
+  return { methods };
+}

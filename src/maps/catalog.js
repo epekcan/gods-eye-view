@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+
 export const MAP_STACKS = [
   {
     id: 'photoreal',
@@ -28,6 +29,27 @@ export const MAP_STACKS = [
     label: 'Esri Satellite',
     shortLabel: 'SAT',
     kind: 'esri-imagery',
+    requiresIon: false,
+  },
+  {
+    id: 'ibb',
+    label: 'İBB HARİTA',
+    shortLabel: 'İBB',
+    kind: 'ibb',
+    requiresIon: false,
+  },
+  {
+    id: 'hgm-uydu',
+    label: 'HGM UYDU',
+    shortLabel: 'HGM UYDU',
+    kind: 'hgm-uydu',
+    requiresIon: false,
+  },
+  {
+    id: 'hgm-fiziki',
+    label: 'HGM FİZİKİ',
+    shortLabel: 'FİZİKİ',
+    kind: 'hgm-fiziki',
     requiresIon: false,
   },
   {

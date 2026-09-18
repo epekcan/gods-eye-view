@@ -1,3 +1,4 @@
+import * as Cesium from 'cesium';
 import { MAP_STACKS } from './catalog.js';
 import { photorealUnavailableReason } from './availability.js';
 import { keySetupRequirement } from '../keySetupCore.mjs';
@@ -8,6 +9,100 @@ import {
   ESRI_ATTRIBUTION_HTML,
 } from './imagery.js';
 import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
+
+const HGM_API_KEY = 'rXKdDZxXgj2hgFspEC4BKG4HMittQ0Y6';
+
+/** HGM Hibrit Uydu: Esri Uydu + HGM Resmi Yol/Cadde Çizgileri */
+class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
+  constructor() {
+    super({
+      url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      maximumLevel: 18,
+      credit: 'Esri World Imagery + Harita Genel Müdürlüğü (HGM) Yol Ağı',
+    });
+
+    this._hgmPattern = `/hgm-servis/harita/yolorta_uydu/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`;
+    this._turkeyRect = Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2);
+  }
+
+  requestImage(x, y, level) {
+    const tileRect = this.tilingScheme.tileXYToRectangle(x, y, level);
+    const inTurkey = Cesium.Rectangle.intersection(tileRect, this._turkeyRect);
+
+    // Türkiye dışı veya düşük zoom ise standart Esri karesini al
+    if (!inTurkey || level < 6 || level > 18) {
+      return super.requestImage(x, y, level);
+    }
+
+    const esriUrl = `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${level}/${y}/${x}`;
+    const hgmUrl = this._hgmPattern
+      .replace('{z}', String(level))
+      .replace('{x}', String(x))
+      .replace('{y}', String(y));
+
+    // Cesium Request nesnesi yerine doğrudan Image yüklemesi yaparak scheduler'ı tamamen bypass ediyoruz
+    const loadImg = (url) =>
+      new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+
+    return Promise.all([loadImg(esriUrl), loadImg(hgmUrl)]).then(([baseImg, hgmImg]) => {
+      if (!baseImg) return undefined;
+      if (!hgmImg) return baseImg;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = baseImg.width || 256;
+      canvas.height = baseImg.height || 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(hgmImg, 0, 0, canvas.width, canvas.height);
+
+      return canvas;
+    });
+  }
+}
+
+function createHgmUyduImagery() {
+  return new HgmHybridImageryProvider();
+}
+
+/** HGM Fiziki Raster Harita Sağlayıcısı */
+function createHgmFizikiImagery() {
+  return new Cesium.UrlTemplateImageryProvider({
+    url: `/hgm-servis/hgmrasterhrt//fiziki/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`,
+    tilingScheme: new Cesium.WebMercatorTilingScheme(),
+    rectangle: Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2),
+    maximumLevel: 18,
+    credit: 'Harita Genel Müdürlüğü (HGM) Fiziki',
+  });
+}
+
+/** İBB Harita İstanbul Resmi Ortofoto / Uydu Sağlayıcısı */
+function createIbbImagery() {
+  return new Cesium.UrlTemplateImageryProvider({
+    url: '/ibb-ortofoto/cbsc2/UYDU/Layers/_alllayers/L{arcLevel}/R{arcRow}/C{arcCol}.jpg',
+    tilingScheme: new Cesium.WebMercatorTilingScheme(),
+    rectangle: Cesium.Rectangle.fromDegrees(27.8, 40.7, 29.9, 41.6),
+    maximumLevel: 19,
+    credit: 'İstanbul Büyükşehir Belediyesi CBS - Harita İstanbul',
+    customTags: {
+      arcLevel: (imageryProvider, x, y, level) => {
+        return level < 10 ? '0' + level : String(level);
+      },
+      arcRow: (imageryProvider, x, y, level) => {
+        return y.toString(16).padStart(8, '0');
+      },
+      arcCol: (imageryProvider, x, y, level) => {
+        return x.toString(16).padStart(8, '0');
+      },
+    },
+  });
+}
 
 /** Select sources and setup guidance without putting provider branches in the controller. */
 export function createDefaultMapSources({
@@ -44,12 +139,20 @@ export function createDefaultMapSources({
           unavailableReason: photorealUnavailableReason(hasIon || hasGoogle),
           tileset: googleTileset,
         };
+
       const imagery =
         descriptor.kind === 'ion'
           ? () => createIonImagery(descriptor.style, ionToken)
           : descriptor.id === 'osm'
             ? createOsmImagery
-            : createEsriImagery;
+            : descriptor.id === 'ibb'
+              ? createIbbImagery
+              : descriptor.id === 'hgm-uydu'
+                ? createHgmUyduImagery
+                : descriptor.id === 'hgm-fiziki'
+                  ? createHgmFizikiImagery
+                  : createEsriImagery;
+
       return {
         ...common,
         imagery,

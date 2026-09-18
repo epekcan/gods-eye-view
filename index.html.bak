@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TARGIL IRS — Mekansal Gözlem Platformu</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+</head>
+<body>
+  <!-- gev:template scene-chrome -->
+
+  <!-- gev:template cockpit -->
+
+  <!-- gev:template display-controls -->
+
+  <!-- gev:template command-dock -->
+
+  <!-- gev:template layer-panels -->
+
+  <!-- gev:template context -->
+
+  <!-- gev:template welcome -->
+
+  <!-- gev:template provider-settings -->
+
+  <!-- gev:template hud-loading -->
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

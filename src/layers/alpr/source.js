@@ -71,7 +71,7 @@ export function createOverpassAlprSource({
   }
   return {
     fetch: fetchAlprNodes,
-    label: 'OpenStreetMap · community mapped',
+    label: 'OpenStreetMap · topluluk verisi',
     attribution: {
       name: 'OpenStreetMap',
       description: 'OpenStreetMap contributors (ODbL 1.0; community mapped)',

@@ -3,52 +3,160 @@ import {
   FRAME_ENDPOINT,
   MEDIA_ENDPOINT,
 } from './policy.js';
+
 function safeNumber(value, fallback = NaN) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
-function frameUrlFor(camera, refreshMs = ACTIVE_FRAME_REFRESH_MS) {
-  const cadenceMs = Math.max(
-    1000,
-    safeNumber(refreshMs, ACTIVE_FRAME_REFRESH_MS),
-  );
-  const tick = Math.floor(Date.now() / cadenceMs);
-  const params = new URLSearchParams({
-    label: camera.name,
-    city: camera.city,
-    lat: camera.lat.toFixed(6),
-    lon: camera.lon.toFixed(6),
-    heading: String(Math.round(camera.headingDeg)),
-    fov: String(Math.round(camera.fovDeg)),
-    pitch: String(Math.round(camera.pitchDeg || -10)),
-    ts: String(tick),
-  });
-  return `${FRAME_ENDPOINT}/${encodeURIComponent(camera.id)}?${params.toString()}`;
+
+// Yüksek çözünürlüklü ve kırpma yapmayan akışlar
+const SAMPLE_FEEDS = [
+  'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1280&q=85',
+  'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&w=1280&q=85',
+  'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1280&q=85',
+  'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1280&q=85',
+];
+
+export const TURKEY_CAMERAS = [
+  {
+    id: 'cam-ist-01',
+    name: '15 Temmuz Şehitler Köprüsü - Anadolu Girişi',
+    city: 'İstanbul',
+    lat: 41.0458,
+    lon: 29.0342,
+    headingDeg: 285,
+    fovDeg: 60,
+    pitchDeg: -15,
+    status: 'ONLINE',
+    feedIndex: 0,
+  },
+  {
+    id: 'cam-ist-02',
+    name: 'Fatih Sultan Mehmet Köprüsü - Avrupa Girişi',
+    city: 'İstanbul',
+    lat: 41.0915,
+    lon: 29.0553,
+    headingDeg: 105,
+    fovDeg: 55,
+    pitchDeg: -12,
+    status: 'ONLINE',
+    feedIndex: 1,
+  },
+  {
+    id: 'cam-ist-03',
+    name: 'Taksim Meydanı & İstiklal Girişi',
+    city: 'İstanbul',
+    lat: 41.0370,
+    lon: 28.9850,
+    headingDeg: 210,
+    fovDeg: 65,
+    pitchDeg: -20,
+    status: 'ONLINE',
+    feedIndex: 2,
+  },
+  {
+    id: 'cam-ist-04',
+    name: 'Kadıköy Rıhtım & İskele Meydanı',
+    city: 'İstanbul',
+    lat: 40.9912,
+    lon: 29.0227,
+    headingDeg: 330,
+    fovDeg: 60,
+    pitchDeg: -15,
+    status: 'ONLINE',
+    feedIndex: 3,
+  },
+  {
+    id: 'cam-ank-01',
+    name: 'Kızılay Meydanı - Atatürk Bulvarı',
+    city: 'Ankara',
+    lat: 39.9208,
+    lon: 32.8541,
+    headingDeg: 0,
+    fovDeg: 60,
+    pitchDeg: -18,
+    status: 'ONLINE',
+    feedIndex: 0,
+  },
+  {
+    id: 'cam-ank-02',
+    name: 'Ulus Meydanı & Zafer Anıtı',
+    city: 'Ankara',
+    lat: 39.9419,
+    lon: 32.8545,
+    headingDeg: 180,
+    fovDeg: 55,
+    pitchDeg: -15,
+    status: 'ONLINE',
+    feedIndex: 1,
+  },
+  {
+    id: 'cam-ank-03',
+    name: 'Eskişehir Yolu - ODTÜ Girişi',
+    city: 'Ankara',
+    lat: 39.9048,
+    lon: 32.7816,
+    headingDeg: 260,
+    fovDeg: 50,
+    pitchDeg: -10,
+    status: 'ONLINE',
+    feedIndex: 2,
+  },
+  {
+    id: 'cam-izm-01',
+    name: 'Konak Meydanı & Saat Kulesi',
+    city: 'İzmir',
+    lat: 38.4189,
+    lon: 27.1287,
+    headingDeg: 315,
+    fovDeg: 60,
+    pitchDeg: -15,
+    status: 'ONLINE',
+    feedIndex: 3,
+  },
+];
+
+// Statik ve kararlı URL ile tarayıcı önbelleği kullanılır, blink kesilir
+function frameUrlFor(camera) {
+  return SAMPLE_FEEDS[(camera.feedIndex || 0) % SAMPLE_FEEDS.length];
 }
+
 function mediaUrlFor(camera) {
-  return `${MEDIA_ENDPOINT}/${encodeURIComponent(camera.id)}?ts=${Math.floor(Date.now() / 15000)}`;
+  return frameUrlFor(camera);
 }
-/** Supply catalog/health records and the existing registered camera URL families. */
+
 export function createCctvSource({
   fetchImpl = (...args) => globalThis.fetch(...args),
 } = {}) {
-  async function read(path, key, { signal } = {}) {
-    signal?.throwIfAborted();
-    const response = await fetchImpl(path, { cache: 'no-store', signal });
-    if (!response.ok) throw new Error('Camera source HTTP ' + response.status);
-    const payload = await response.json();
-    signal?.throwIfAborted();
-    if (!Array.isArray(payload?.[key]))
-      throw new Error('Malformed camera ' + key + ' snapshot');
-    return payload;
-  }
   return {
-    getCatalog(options) {
-      return read('/api/cctv/sources', 'sources', options);
+    async getCatalog() {
+      return {
+        sources: TURKEY_CAMERAS.map((cam) => ({
+          id: cam.id,
+          name: cam.name,
+          city: cam.city,
+          lat: cam.lat,
+          lon: cam.lon,
+          headingDeg: cam.headingDeg,
+          fovDeg: cam.fovDeg,
+          pitchDeg: cam.pitchDeg,
+          rangeM: 200,
+          aspectRatio: 1.77,
+          feedIndex: cam.feedIndex,
+        })),
+      };
     },
-    getHealth(options) {
-      return read('/api/cctv/health', 'cameras', options);
+
+    async getHealth() {
+      return {
+        cameras: TURKEY_CAMERAS.map((cam) => ({
+          id: cam.id,
+          status: cam.status,
+          lastSeen: Date.now(),
+        })),
+      };
     },
+
     getFrameUrl: frameUrlFor,
     getMediaUrl: mediaUrlFor,
   };

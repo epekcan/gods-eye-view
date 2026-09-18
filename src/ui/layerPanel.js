@@ -1,11 +1,13 @@
 import { GUIDANCE_STATUSES } from '../loadingFeedback.js';
+
+/** Taktik Akış ve Buton Durum Etiketleri */
 const FEED_STATE_LABELS = Object.freeze({
-  nominal: 'ON',
-  loading: 'LOADING',
-  degraded: 'DEGRADED',
-  stale: 'STALE',
-  fallback: 'FALLBACK',
-  unavailable: 'UNAVAILABLE',
+  nominal: 'AÇIK',
+  loading: 'YÜKLENİYOR',
+  degraded: 'ZAYIF',
+  stale: 'ESKİ',
+  fallback: 'YEDEK',
+  unavailable: 'DEVRE DIŞI',
 });
 
 /**
@@ -34,10 +36,6 @@ export function layerFeedState(stats = {}) {
     return 'unavailable';
   }
   if (state.loading) return 'loading';
-  // Guidance states ask the user to act (zoom in, run a search) — normal
-  // operation, not feed faults. One honesty carve-out: layers keep their
-  // rendered records through the guidance state, so a genuinely stale cache
-  // still reads STALE; a guidance prompt alone never reads DEGRADED.
   if (GUIDANCE_STATUSES.includes(status)) {
     return state.stale ? 'stale' : 'nominal';
   }
@@ -112,6 +110,11 @@ export class LayerPanel {
 
     const generation = this._generation;
     for (const layer of this.getAll()) {
+      // PTS Kameraları ve Radio katmanlarını panelden kaldır
+      if (['cameras', 'cctv', 'alpr', 'pts', 'radio'].includes(layer.id)) {
+        continue;
+      }
+
       if (!layer.showInTogglePanel) continue;
       const row = document.createElement('div');
       row.className = 'data-toggle-row';
@@ -143,9 +146,6 @@ export class LayerPanel {
       toggle.className = `data-toggle-btn${layer.enabled ? ' active' : ''}`;
       this._syncToggleButton(toggle, layer);
       this._bind(toggle, 'click', async () => {
-        // Native `disabled` immediately evicts keyboard focus in Chromium. Keep
-        // the lifecycle control focusable while it is busy, and enforce the
-        // same single-flight interaction contract through ARIA instead.
         if (
           this._destroyed ||
           this._generation !== generation ||
@@ -179,13 +179,7 @@ export class LayerPanel {
       row.appendChild(topRow);
       row.appendChild(bottomRow);
 
-      // Optional per-layer sub-controls (chips + color legend). The click
-      // listener is delegated and attached once here, so it survives
-      // _refreshTogglePanel — which only rewrites the container's contents.
       if (this.hasRowControls(layer.id)) {
-        // A layer whose controls settle asynchronously (a chunked catalog load
-        // that can also fail) pushes a re-render through this; nothing else
-        // would repaint the row before its next scheduled refresh.
         const unsubscribe = this.subscribeRowControls(layer.id, () =>
           this._refreshTogglePanel(),
         );
@@ -195,8 +189,6 @@ export class LayerPanel {
         this._bind(controls, 'click', (event) => {
           const button = event.target?.closest?.('.data-toggle-chip');
           if (!button || button.disabled) return;
-          // Re-read the live descriptor rather than trusting the rendered
-          // chip, so a stale row can never apply an inverted toggle.
           const chip = this._rowControlsFor(layer.id)?.chips?.find(
             (entry) => entry.id === button.dataset.chipId,
           );
@@ -213,26 +205,12 @@ export class LayerPanel {
     }
   }
 
-  /** Qualify a loaded count when it does not mean items currently on screen. */
   _layerCountText(stats) {
     if (typeof stats.countLabel === 'string' && stats.countLabel.trim())
       return stats.countLabel;
     return stats.count ? this._formatCount(stats.count) : '—';
   }
 
-  /**
-   * Render a layer's row chips and color legend, and keep the whole block
-   * hidden while the layer is off (or while a dependency owner has surrendered
-   * it) so a quiet row stays quiet.
-   *
-   * Chip BUTTONS are reconciled in place, keyed by chip id, rather than
-   * rebuilt: this runs on every panel refresh — including the one the chip's
-   * own click triggers — and replacing the node would drop keyboard focus
-   * mid-interaction. Legend entries hold no focus and no listeners, so they
-   * are replaced freely.
-   * @param {HTMLElement|null} container The row's `.data-toggle-controls` node.
-   * @param {object} layer Registered layer entry.
-   */
   _syncRowControls(container, layer) {
     if (!container) return;
     const controls = layer.enabled ? this._rowControlsFor(layer.id) : null;
@@ -287,8 +265,6 @@ export class LayerPanel {
 
   _refreshTogglePanel() {
     if (this._destroyed || !this._toggleContainer) return;
-    // Skip DOM churn while hidden; visibilitychange (main.js) triggers one
-    // refresh on return. (perf wave 2)
     if (typeof document !== 'undefined' && document.hidden) {
       this.onHiddenRefresh();
       return;
@@ -326,21 +302,20 @@ export class LayerPanel {
     const lifecycleState =
       layer.lifecycleState || (layer.enabled ? 'enabled' : 'disabled');
     if (lifecycleState === 'enabling' || lifecycleState === 'disabling') {
-      return `${lifecycleState.toUpperCase()} · ${source}`;
+      const transLabel = lifecycleState === 'enabling' ? 'BAŞLATILIYOR' : 'DURDURULUYOR';
+      return `${transLabel} · ${source}`;
     }
     if (layer.lifecycleUncertain) {
-      return `UNCERTAIN · ${source} · lifecycle state requires reconciliation`;
+      return `BELİRSİZ · ${source} · durum mutabakatı gerekiyor`;
     }
     const presentedError =
       stats.error || stats.lastError || stats.managerRefreshError;
     if (presentedError) {
       if (typeof stats.retryInSec === 'number' && stats.retryInSec > 0) {
-        return `${stateLabel} · ${source} · ${presentedError} · retry ${stats.retryInSec}s`;
+        return `${stateLabel} · ${source} · ${presentedError} · yeniden deneme: ${stats.retryInSec}sn`;
       }
       return `${stateLabel} · ${source} · ${presentedError}`;
     }
-    // A guidance status carries its prompt in `statusMessage`, not `error`, so
-    // the row still tells the operator what to do without reporting a fault.
     if (
       GUIDANCE_STATUSES.includes(String(stats.status || '').toLowerCase()) &&
       typeof stats.statusMessage === 'string' &&
@@ -348,12 +323,12 @@ export class LayerPanel {
     ) {
       return `${source} · ${stats.statusMessage.trim()}`;
     }
-    const ago = stats.lastUpdate ? this._timeAgo(stats.lastUpdate) : 'never';
+    const ago = stats.lastUpdate ? this._timeAgo(stats.lastUpdate) : 'veri yok';
     if (stats.loading) {
       const loadingLabel =
         typeof stats.loadingLabel === 'string' && stats.loadingLabel.trim()
           ? stats.loadingLabel.trim()
-          : 'loading...';
+          : 'yükleniyor...';
       return `${source} · ${loadingLabel}`;
     }
     if (feedState === 'fallback') {
@@ -366,7 +341,7 @@ export class LayerPanel {
     if (feedState === 'stale') {
       const retry =
         typeof stats.retryInSec === 'number' && stats.retryInSec > 0
-          ? ` · retrying in ${stats.retryInSec}s`
+          ? ` · ${stats.retryInSec}sn içinde yeniden deneniyor`
           : '';
       return `${stateLabel} · ${source} · ${ago}${retry}`;
     }
@@ -398,19 +373,16 @@ export class LayerPanel {
       : uncertain
         ? 'uncertain'
         : feedState;
-    // A busy toggle remains the keyboard focus owner. `aria-disabled` plus the
-    // click guard above prevents repeat activation without the focus loss caused
-    // by native `disabled`.
     button.disabled = false;
     button.setAttribute('aria-disabled', String(transitioning));
     button.setAttribute('aria-busy', String(transitioning));
     button.textContent = transitioning
-      ? layer.lifecycleState.toUpperCase()
+      ? (layer.lifecycleState === 'enabling' ? 'AÇILIYOR' : 'KAPANIYOR')
       : uncertain
-        ? 'UNCERTAIN'
+        ? 'BELİRSİZ'
         : layer.enabled
           ? FEED_STATE_LABELS[feedState]
-          : 'OFF';
+          : 'KAPALI';
     button.setAttribute('aria-label', `${layer.name}: ${button.textContent}`);
   }
 
@@ -421,9 +393,9 @@ export class LayerPanel {
 
   _timeAgo(timestamp) {
     const diff = Math.floor((Date.now() - timestamp) / 1000);
-    if (diff < 5) return 'just now';
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 5) return 'şimdi';
+    if (diff < 60) return `${diff}sn önce`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}dk önce`;
+    return `${Math.floor(diff / 3600)}sa önce`;
   }
 }

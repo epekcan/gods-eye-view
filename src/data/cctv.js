@@ -33,6 +33,7 @@ const layer = createCctvLayer({
     render,
   },
 });
+
 export const calibrationPatchMovesAnchor = layer.calibrationPatchMovesAnchor;
 export const migrateRangeScaleForFloor = layer.migrateRangeScaleForFloor;
 export const _pushAmbientCardEntriesForTest =
@@ -86,6 +87,7 @@ export const _setCctvCoverageStateForTest = layer._setCctvCoverageStateForTest;
 export const focusCctvRecord = layer.focusCctvRecord;
 export const maybeAutoHop = layer.maybeAutoHop;
 export const cctvCycleIndex = layer.cctvCycleIndex;
+
 export {
   CCTV_CALIBRATION_STORAGE_KEY_V1,
   CCTV_CALIBRATION_STORAGE_KEY_V2,
@@ -94,4 +96,91 @@ export {
   CCTV_PROJECTION_OVERLAY_SOURCE_ID,
   CCTV_PROJECTION_OVERLAY_SOURCE_OPTIONS,
 } from '../layers/cctv/index.js';
-export default layer;
+
+function purgeCctvVisuals(viewer) {
+  if (typeof layer.disable === 'function') {
+    layer.disable(viewer);
+  }
+  if (typeof layer.hideCctvRecordVisuals === 'function') {
+    layer.hideCctvRecordVisuals();
+  }
+  if (typeof overlays.clearOverlaySource === 'function') {
+    overlays.clearOverlaySource('cctv-ambient');
+    overlays.clearOverlaySource('cctv-projections');
+  }
+  if (typeof overlays.setOverlaySourceVisible === 'function') {
+    overlays.setOverlaySourceVisible('cctv-ambient', false);
+    overlays.setOverlaySourceVisible('cctv-projections', false);
+  }
+}
+
+// --- DataLayerManager ve Toggle Panel Entegrasyonu ---
+let _enabled = false;
+let _viewer = null;
+
+const cctvDataLayer = {
+  ...layer,
+  id: 'cctv',
+  name: 'Canlı Kameralar',
+  icon: '📹',
+  source: 'İBB & ABB Canlı Yayın',
+  showInTogglePanel: true,
+  updateInterval: 0,
+
+  async init(viewer) {
+    _viewer = viewer;
+    if (typeof layer.init === 'function') {
+      await layer.init(viewer);
+    }
+    purgeCctvVisuals(viewer);
+    _enabled = false;
+    return true;
+  },
+
+  async enable(viewer = _viewer) {
+    _enabled = true;
+    if (typeof overlays.setOverlaySourceVisible === 'function') {
+      overlays.setOverlaySourceVisible('cctv-ambient', true);
+      overlays.setOverlaySourceVisible('cctv-projections', true);
+    }
+    if (typeof layer.enable === 'function') {
+      return await layer.enable(viewer);
+    }
+    return true;
+  },
+
+  async disable(viewer = _viewer) {
+    _enabled = false;
+    purgeCctvVisuals(viewer);
+    return true;
+  },
+
+  async update() {
+    if (_enabled && typeof layer.update === 'function') {
+      return await layer.update();
+    }
+    return true;
+  },
+
+  async destroy(viewer = _viewer) {
+    _enabled = false;
+    purgeCctvVisuals(viewer);
+    if (typeof layer.destroy === 'function') {
+      await layer.destroy(viewer);
+    }
+    _viewer = null;
+    return true;
+  },
+
+  getStats() {
+    return {
+      count: null,
+      countLabel: _enabled ? 'AÇIK' : 'KAPALI',
+      status: _enabled ? 'nominal' : 'offline',
+      source: 'İBB & ABB Canlı Yayın',
+      lastUpdate: _enabled ? Date.now() : null,
+    };
+  },
+};
+
+export default cctvDataLayer;

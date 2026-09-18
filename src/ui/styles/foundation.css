@@ -1,19 +1,24 @@
 /* ═══════════════════════════════════════════════
-   GOD'S EYE VIEW — Dark Sci-Fi UI
-   Apple meets Blade Runner
+   TENGRİ GÖZÜ — Taktik Kırmızı / Beyaz UI
+   OSINT Gözlem ve İstihbarat Teması
    ═══════════════════════════════════════════════ */
 
 :root {
   --bg-dark: #0a0a0f;
-  --glass-bg: rgba(12, 12, 20, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 255, 255, 0.15);
-  --accent: #00d4ff;
-  --accent-dim: rgba(0, 212, 255, 0.15);
-  --accent-glow: rgba(0, 212, 255, 0.4);
-  --text-primary: #e8eaed;
-  --text-secondary: rgba(232, 234, 237, 0.5);
-  --text-dim: rgba(232, 234, 237, 0.3);
+  --glass-bg: rgba(14, 12, 14, 0.78);
+  --glass-border: rgba(255, 42, 68, 0.18);
+  --glass-border-hover: rgba(255, 42, 68, 0.38);
+  
+  /* Ana Taktik Kırmızı ve Işıltı Paleti */
+  --accent: #ff2a44;
+  --accent-dim: rgba(255, 42, 68, 0.18);
+  --accent-glow: rgba(255, 42, 68, 0.55);
+  
+  /* Keskin Beyaz ve Gümüş Metinler */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --text-dim: rgba(255, 255, 255, 0.42);
+  
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --panel-radius: 16px;
@@ -36,9 +41,7 @@
   box-sizing: border-box;
 }
 
-/* Keyboard focus is an app-wide state and must survive selected/active button
-   skins. Individual controls can choose an inset/outset offset, but no local
-   `outline: none` rule may erase the ring. */
+/* Keyboard focus */
 :where(
   button,
   a[href],
@@ -65,7 +68,7 @@
   [role='textbox'],
   [role='treeitem']
 ):focus-visible {
-  outline: 2px solid var(--text-primary) !important;
+  outline: 2px solid var(--accent) !important;
   outline-offset: 2px;
 }
 
@@ -89,10 +92,6 @@ body {
   left: 0;
 }
 
-/* Unified world-overlay host: detection uses one host-owned blend surface
-   beneath the shared text/card canvas; both share one frame path. The root
-   holds ONLY the card canvas — it is a stacking context (z-index below), and
-   a canvas that blends against the scene cannot live inside one. */
 #world-overlay-root {
   position: absolute;
   inset: 0;
@@ -111,34 +110,19 @@ body {
   pointer-events: none;
 }
 
-/* Scope mask — the explicit circular viewport treatment (see
-   src/scopeMask.js for the emergent-artifact history). z2 keeps it above
-   the WebGL scene but under the z5 detection surface, preserving the old
-   compositing order where detection's blend rode the masked scene. */
 #scope-mask {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  /* z1 like the celestial ring; the ring is appended LATER so DOM order
-     keeps it ABOVE the mask — matching the old stacking, where the DOM
-     ring rode above the in-scene scope artifact. Detection (z5) and the
-     overlay root (z6) stay above both. */
   z-index: 1;
   pointer-events: none;
 }
 
-/* The detection surface is host-owned but parented into #cesiumContainer
-   (position:absolute, z-index:auto — NOT a stacking context) so its
-   `mix-blend-mode: screen` composites against the WebGL scene. z5 keeps it
-   under the z6 root that carries the shared card canvas; do not move this
-   surface inside #world-overlay-root, which would isolate the blend. */
 #world-overlay-detection-surface {
   z-index: 5;
 }
 
-/* Canvas cards retain their spatial renderer; this parallel focusable list
-   exposes only the currently painted actionable targets to assistive tech. */
 .world-overlay-accessibility {
   position: fixed;
   width: 1px;
@@ -151,8 +135,7 @@ body {
   border: 0;
 }
 
-/* ── Source-backed cockpit weather ─────────────
-   Low-resolution GPU cloud pass composited only inside the cockpit keyhole. */
+/* ── Source-backed cockpit weather ───────────── */
 #cockpit-cloud-effects {
   position: fixed;
   inset: 0;
@@ -177,10 +160,6 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 .celestial-ring-overlay {
   position: absolute;
   inset: 0;
-  /* Above the z1 scope mask regardless of DOM order (the ring is built by
-     StyleManager before the scope installs) — the ring always rode above
-     the scope treatment. Detection (z5) and the overlay root (z6) stay on
-     top of both. */
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
@@ -211,7 +190,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 .celestial-ring-outline {
   position: absolute;
   box-sizing: border-box;
-  border: 0.8px solid rgba(151, 218, 232, 0.095);
+  border: 0.8px solid rgba(255, 42, 68, 0.2);
   border-radius: 50%;
   will-change: width, height;
 }
@@ -235,17 +214,17 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 }
 
 .celestial-sun {
-  color: rgba(231, 194, 72, 0.92);
+  color: rgba(255, 215, 0, 0.95);
   text-shadow:
-    0 0 7px rgba(231, 194, 72, 0.72),
-    0 0 18px rgba(231, 194, 72, 0.3);
+    0 0 7px rgba(255, 215, 0, 0.72),
+    0 0 18px rgba(255, 215, 0, 0.3);
 }
 
 .celestial-moon {
-  color: rgba(55, 211, 239, 0.84);
+  color: rgba(255, 255, 255, 0.9);
   text-shadow:
-    0 0 7px rgba(55, 211, 239, 0.65),
-    0 0 17px rgba(55, 211, 239, 0.25);
+    0 0 7px rgba(255, 255, 255, 0.65),
+    0 0 17px rgba(255, 42, 68, 0.35);
 }
 
 #celestial-toggle:disabled {
@@ -266,26 +245,18 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   display: none !important;
 }
 
-/* Data-source attribution (Google Maps / 3D Tiles, etc.).
-   Required by the Google Maps Platform Terms of Service — keep it visible.
-   Styled to be unobtrusive but legible against the dark UI. */
+/* Data-source attribution */
 #cesium-credits {
   position: fixed;
-  /* Bottom-LEFT corner, mirrored from the GEV mic pill (right:36/bottom:36) so the two bottom
-     corners are symmetric; sits below the coordinate HUD (.hud-bottom-left, bottom:180). Was
-     dead-center at the bottom, tucked under the LOCATIONS/STYLE panels. Must stay visible (Google
-     /Cesium attribution ToS). */
   bottom: 36px;
   left: 36px;
   z-index: 90;
   max-width: 90vw;
-  /* Keep the Google logo + "Data attribution" link on ONE line — they were wrapping to a second
-     row (looked like it was falling over). nowrap + a roomy max-width holds them inline. */
   white-space: nowrap;
   pointer-events: auto;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: rgba(232, 234, 237, 0.55);
+  color: rgba(255, 255, 255, 0.6);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 #cesium-credits .cesium-credit-logoContainer,
@@ -296,11 +267,9 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 }
 #cesium-credits a,
 #cesium-credits .cesium-credit-expand-link {
-  color: rgba(232, 234, 237, 0.7);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-/* Keep the ALPR source overflow reachable even after its brief on-map credit
-   collapses. Wrap whole entries only while the optional layer is on. */
 body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
   #cesium-credits {
   white-space: normal;
@@ -314,13 +283,9 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
 body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
   #cesium-credits
   .cesium-credit-expand-link {
-  /* Keep the complete link at the left edge, clear of the Power Up button. */
   display: block !important;
 }
 
-/* Cesium's stock attribution lightbox grows with every registered data source.
-   Keep the title and close affordance fixed while the complete, unabridged
-   credit list wraps and scrolls inside a compact panel. */
 .cesium-credit-lightbox-overlay {
   z-index: 200 !important;
 }
@@ -362,23 +327,12 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
     margin: 0 !important;
   }
 }
-/* Clean-view / recording: the Google + Cesium attribution MUST stay visible.
-   Google Maps Platform ToS and Cesium's terms require the credit whenever the
-   content is displayed — and these are exactly the modes used to record demos
-   and launch videos, so hiding #cesium-credits here (as it was before) shipped
-   non-compliant footage. The full credit line — Cesium/Ion logo, "Google Maps",
-   and the "Data attribution" link that opens the per-layer license popover —
-   stays on screen; it's already styled small and unobtrusive above. The GEV
-   chrome (panels/HUD) still fades via its own rules; only the required notice
-   is exempt. (Note: Cesium re-applies inline styles on the credit elements each
-   frame, so the on-screen credit content is owned by Cesium's update loop, not
-   CSS overrides — we deliberately don't fight it here.) */
 
+/* ── Bottom Right Voice Control Pill ─────────── */
 #gev-voice-control {
   position: fixed;
   right: 36px;
   bottom: 36px;
-  /* Z ladder: panels 100-139, voice pill 150, toast 200, clean-view-exit 300 */
   z-index: 150;
   display: flex;
   align-items: center;
@@ -390,10 +344,10 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
   border: 1px solid var(--glass-border);
   border-radius: 999px;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 0 20px rgba(0, 212, 255, 0.08);
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 42, 68, 0.1) inset,
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 20px var(--accent-dim);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   font-family: var(--font-mono);
@@ -404,9 +358,9 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
   width: 72px;
   height: 34px;
   flex: 0 0 auto;
-  color: var(--accent);
-  background: rgba(0, 212, 255, 0.06);
-  border: 1px solid rgba(0, 212, 255, 0.28);
+  color: #ffffff;
+  background: rgba(255, 42, 68, 0.2);
+  border: 1px solid rgba(255, 42, 68, 0.45);
   border-radius: var(--btn-radius);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -416,8 +370,9 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
 
 #gev-voice-button:hover {
   color: #ffffff;
+  background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.22);
+  box-shadow: 0 0 14px var(--accent-glow);
 }
 
 .gev-voice-readout {
@@ -442,31 +397,30 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
 }
 
 #gev-voice-control[data-status='listening'] {
-  border-color: rgba(92, 255, 198, 0.45);
+  border-color: rgba(255, 255, 255, 0.7);
 }
 
 #gev-voice-control[data-status='listening'] #gev-voice-status {
-  color: #5cffc6;
+  color: #ffffff;
 }
 
 #gev-voice-control[data-status='executing'] {
-  border-color: rgba(255, 220, 120, 0.55);
+  border-color: rgba(255, 42, 68, 0.75);
 }
 
 #gev-voice-control[data-status='executing'] #gev-voice-status {
-  color: #ffdc78;
+  color: var(--accent);
 }
 
 #gev-voice-control[data-status='error'] {
   align-items: flex-start;
   width: min(440px, calc(100vw - 72px));
-  border-color: rgba(255, 92, 110, 0.6);
-  /* Multi-line error block reads as a panel, not a capsule */
+  border-color: rgba(255, 42, 68, 0.9);
   border-radius: var(--panel-radius);
 }
 
 #gev-voice-control[data-status='error'] #gev-voice-status {
-  color: #ff5c6e;
+  color: #ff2a44;
 }
 
 #gev-voice-control[data-status='error'] .gev-voice-readout {
@@ -524,7 +478,7 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
   display: block;
   width: 52px;
   height: auto;
-  filter: drop-shadow(0 0 12px rgba(0, 246, 255, 0.5));
+  filter: drop-shadow(0 0 12px rgba(255, 42, 68, 0.7));
 }
 
 #title-bar .title-logo::before,
@@ -598,14 +552,14 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
 #title-bar .title-accent,
 .loader-content .title-accent {
   color: var(--accent);
-  font-weight: 300;
+  font-weight: 400;
 }
 
 #title-bar .subtitle {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 5px;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   margin-top: 8px;
   text-transform: uppercase;
 }
@@ -643,10 +597,10 @@ body:has(.data-toggle-row[data-layer-id='alpr-cameras'] .data-toggle-btn.active)
   display: block;
   font-family: var(--font-mono);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 5px;
-  color: var(--accent);
+  color: #ffffff;
   margin-top: 4px;
-  text-shadow: 0 0 20px var(--accent-glow);
+  text-shadow: 0 0 16px var(--accent-glow);
   transition: var(--transition-smooth);
 }

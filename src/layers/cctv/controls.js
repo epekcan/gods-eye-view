@@ -13,11 +13,11 @@ export function createControls({ state: layerState, services, parts, source }) {
   const methods = {
     id: 'cctv',
 
-    name: 'CCTV',
+    name: 'Güvenlik Kameraları',
 
     icon: '📹',
 
-    source: 'CCTV + Street View fallback',
+    source: 'CCTV + Sokak Görünümü Yedeği',
 
     updateInterval: DEFAULT_UPDATE_INTERVAL_MS,
 

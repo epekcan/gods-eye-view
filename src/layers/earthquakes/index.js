@@ -26,9 +26,9 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
 
   const layer = {
     id: 'earthquakes',
-    name: 'Earthquakes (24h)',
+    name: 'Depremler',
     icon: '🌋',
-    source: 'USGS',
+    source: 'Kandilli / AFAD',
     updateInterval: 60000,
 
     init(viewer) {
@@ -148,7 +148,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
         _count = count;
         _lastUpdate = Date.now();
         _lastError = null;
-        console.log(`[Data:Earthquakes] Updated: ${_count} events (M2.5+)`);
+        console.log(`[Data:Earthquakes] Updated: ${_count} events (M1.0+)`);
         return true;
       } catch (e) {
         if (request.signal.aborted || _request !== request || !_enabled)

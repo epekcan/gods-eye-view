@@ -4,9 +4,9 @@ export function createControls({ state: layerState, services, parts, source }) {
   const methods = {
     id: 'bikeshare',
 
-    name: 'Bikeshare',
+    name: 'İBB Açık Veri / Şehir Haritası',
 
-    icon: '🚲',
+    icon: '🏛️',
 
     source: 'GBFS',
 

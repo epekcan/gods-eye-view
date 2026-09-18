@@ -1,12 +1,12 @@
-  <div id="left-panel-stack">
+<div id="left-panel-stack">
   <!-- Data Layer Toggle Panel -->
   <div id="data-panel" class="panel-collapsible collapsed active" data-panel-id="data-panel">
     <div class="panel-glow"></div>
     <div class="data-panel-inner">
       <div class="panel-header">
-        <span class="panel-title">DATA LAYERS</span>
+        <span class="panel-title">VERİ KATMANLARI</span>
         <span class="panel-divider"></span>
-        <button class="panel-collapse-btn" data-collapse-target="data-panel" title="Collapse panel">+</button>
+        <button class="panel-collapse-btn" data-collapse-target="data-panel" title="Paneli daralt">+</button>
       </div>
       <div id="data-toggles" class="data-toggle-list"></div>
     </div>
@@ -17,54 +17,54 @@
     <div class="panel-glow"></div>
     <div class="cctv-panel-inner">
       <div class="panel-header">
-        <span class="panel-title">CCTV</span>
+        <span class="panel-title">KAMERALAR (CCTV)</span>
         <span class="panel-divider"></span>
-        <button class="panel-collapse-btn" data-collapse-target="cctv-panel" title="Collapse panel">+</button>
+        <button class="panel-collapse-btn" data-collapse-target="cctv-panel" title="Paneli daralt">+</button>
       </div>
       <div id="cctv-frame-wrap" class="cctv-frame-wrap">
-        <img id="cctv-frame" alt="CCTV feed frame" />
+        <img id="cctv-frame" alt="Canlı kamera beslemesi" />
       </div>
-      <div id="cctv-source-badge" role="status" aria-live="polite">SOURCE · UNKNOWN</div>
-      <div id="cctv-meta">Enable CCTV to load camera intersections</div>
+      <div id="cctv-source-badge" role="status" aria-live="polite">KAYNAK · BİLİNMİYOR</div>
+      <div id="cctv-meta">Kamera akışlarını yüklemek için CCTV modunu açın</div>
       <div class="cctv-controls">
-        <button id="cctv-enable-btn" class="scene-btn">CCTV OFF</button>
-        <button id="cctv-nearest-btn" class="scene-btn">NEAREST</button>
-      </div>
-      <div class="cctv-controls">
-        <button id="cctv-prev-btn" class="scene-btn">PREV</button>
-        <select id="cctv-camera-select" aria-label="CCTV camera"></select>
-        <button id="cctv-next-btn" class="scene-btn">NEXT</button>
+        <button id="cctv-enable-btn" class="scene-btn">CCTV KAPALI</button>
+        <button id="cctv-nearest-btn" class="scene-btn">EN YAKIN</button>
       </div>
       <div class="cctv-controls">
-        <button id="cctv-focus-btn" class="scene-btn">FOCUS</button>
-        <button id="cctv-coverage-btn" class="scene-btn">COVERAGE OFF</button>
-        <button id="cctv-auto-hop-btn" class="scene-btn">AUTO HOP OFF</button>
+        <button id="cctv-prev-btn" class="scene-btn">ÖNCEKİ</button>
+        <select id="cctv-camera-select" aria-label="CCTV kamerası"></select>
+        <button id="cctv-next-btn" class="scene-btn">SONRAKİ</button>
       </div>
       <div class="cctv-controls">
-        <button id="cctv-projection-btn" class="scene-btn">PROJECTION ON</button>
-        <span id="cctv-quality-chip">CAL · --</span>
+        <button id="cctv-focus-btn" class="scene-btn">ODAKLAN</button>
+        <button id="cctv-coverage-btn" class="scene-btn">KAPSAMA KAPALI</button>
+        <button id="cctv-auto-hop-btn" class="scene-btn">OTO GEÇİŞ</button>
+      </div>
+      <div class="cctv-controls">
+        <button id="cctv-projection-btn" class="scene-btn">PROJEKSİYON AÇIK</button>
+        <span id="cctv-quality-chip">KAL · --</span>
       </div>
       <div class="cctv-calibration-block">
         <div class="cctv-calibration-header">
-          <div class="cctv-summary-label">CALIBRATION</div>
-          <button id="cctv-adjust-btn" class="scene-btn" title="Drag the camera in the world: rings rotate, arrows move, handles set range/FOV">ADJUST</button>
+          <div class="cctv-summary-label">KALİBRASYON</div>
+          <button id="cctv-adjust-btn" class="scene-btn" title="Kamerayı dünya üzerinde konumlandırın">AYARLA</button>
         </div>
-        <div id="cctv-cal-readout" class="cctv-cal-readout" aria-label="Camera pose — click a value to type">
-          <button class="cctv-cal-value" data-cal-field="heading" title="Heading (compass °) — click to type">HDG --</button>
-          <button class="cctv-cal-value" data-cal-field="pitch" title="Pitch (° up/down) — click to type">PITCH --</button>
-          <button class="cctv-cal-value" data-cal-field="fov" title="Horizontal FOV (°) — click to type">FOV --</button>
-          <button class="cctv-cal-value" data-cal-field="range" title="Range / monitor-plane distance (m) — click to type">RANGE --</button>
-          <button class="cctv-cal-value" data-cal-field="height" title="Mount height above ground (m) — click to type">HGT --</button>
-          <button class="cctv-cal-value" data-cal-field="north" title="North offset from catalog position (m) — click to type">ΔN --</button>
-          <button class="cctv-cal-value" data-cal-field="east" title="East offset from catalog position (m) — click to type">ΔE --</button>
+        <div id="cctv-cal-readout" class="cctv-cal-readout" aria-label="Kamera pozu">
+          <button class="cctv-cal-value" data-cal-field="heading" title="İstikamet (pusula açısı °)">AÇI --</button>
+          <button class="cctv-cal-value" data-cal-field="pitch" title="Eğim (°)">EĞİM --</button>
+          <button class="cctv-cal-value" data-cal-field="fov" title="Görüş Alanı (FOV °)">FOV --</button>
+          <button class="cctv-cal-value" data-cal-field="range" title="Menzil (m)">MENZİL --</button>
+          <button class="cctv-cal-value" data-cal-field="height" title="Yükseklik (m)">İRT --</button>
+          <button class="cctv-cal-value" data-cal-field="north" title="Kuzey sapma (m)">ΔK --</button>
+          <button class="cctv-cal-value" data-cal-field="east" title="Doğu sapma (m)">ΔD --</button>
         </div>
         <div class="cctv-controls cctv-calibration-actions">
-          <button id="cctv-calib-save-btn" class="scene-btn">SAVE CAL</button>
-          <button id="cctv-calib-reset-btn" class="scene-btn">RESET CAL</button>
+          <button id="cctv-calib-save-btn" class="scene-btn">KAYDET</button>
+          <button id="cctv-calib-reset-btn" class="scene-btn">SIFIRLA</button>
         </div>
       </div>
-      <div class="cctv-summary-label">SCENE SUMMARY</div>
-      <div id="cctv-summary">Enable CCTV to start camera-linked intelligence summaries.</div>
+      <div class="cctv-summary-label">SAHNE ÖZETİ</div>
+      <div id="cctv-summary">Kamera telemetri ve özet verisi bekleniyor...</div>
     </div>
   </div>
 
@@ -73,36 +73,35 @@
     <div class="panel-glow"></div>
     <div class="scene-panel-inner">
       <div class="panel-header">
-        <span class="panel-title">SCENES</span>
+        <span class="panel-title">SAHNELER &amp; ROTALAR</span>
         <span class="panel-divider"></span>
-        <button class="panel-collapse-btn" data-collapse-target="scene-panel" title="Collapse panel">+</button>
+        <button class="panel-collapse-btn" data-collapse-target="scene-panel" title="Paneli daralt">+</button>
       </div>
       <div class="scene-controls">
-        <select id="scene-select" aria-label="Scene recipe"></select>
-        <button id="scene-new-btn" class="scene-btn">NEW</button>
-        <button id="scene-delete-btn" class="scene-btn scene-btn-danger">DEL</button>
+        <select id="scene-select" aria-label="Sahne planı"></select>
+        <button id="scene-new-btn" class="scene-btn">YENİ</button>
+        <button id="scene-delete-btn" class="scene-btn scene-btn-danger">SİL</button>
       </div>
       <div class="scene-controls">
-        <button id="scene-capture-btn" class="scene-btn">CAPTURE SHOT</button>
-        <button id="scene-update-shot-btn" class="scene-btn">UPDATE SHOT</button>
+        <button id="scene-capture-btn" class="scene-btn">KARE YAKALA</button>
+        <button id="scene-update-shot-btn" class="scene-btn">GÜNCELLE</button>
       </div>
       <div id="scene-shot-list" class="scene-shot-list"></div>
       <div class="scene-controls">
-        <button id="scene-start-btn" class="scene-btn">START</button>
-        <button id="scene-stop-btn" class="scene-btn scene-btn-danger">STOP</button>
-        <button id="scene-next-btn" class="scene-btn">NEXT</button>
+        <button id="scene-start-btn" class="scene-btn">BAŞLAT</button>
+        <button id="scene-stop-btn" class="scene-btn scene-btn-danger">DURDUR</button>
+        <button id="scene-next-btn" class="scene-btn">SONRAKİ</button>
       </div>
       <div class="scene-controls">
-        <button id="scene-export-btn" class="scene-btn">EXPORT PRESETS</button>
-        <button id="scene-import-btn" class="scene-btn">IMPORT</button>
-        <button id="scene-download-btn" class="scene-btn">RUN LOG</button>
+        <button id="scene-export-btn" class="scene-btn">DIŞA AKTAR</button>
+        <button id="scene-import-btn" class="scene-btn">İÇE AKTAR</button>
+        <button id="scene-download-btn" class="scene-btn">GÜNLÜK İNDİR</button>
         <input type="file" id="scene-import-file" accept="application/json,.json" hidden />
       </div>
       <div class="scene-progress">
         <div id="scene-progress-fill">0%</div>
       </div>
-      <div id="scene-status">Ready</div>
+      <div id="scene-status">Hazır</div>
     </div>
   </div>
-
-  </div>
+</div>

@@ -1,0 +1,81 @@
+import { DEFAULT_UPDATE_INTERVAL_MS } from './policy.js';
+
+export function createControls({ state: layerState, services, parts, source }) {
+  const methods = {
+    id: 'bikeshare',
+
+    name: 'İBB Şehir Haritası',
+
+    icon: '🏛️',
+
+    source: 'İBB CBS / Açık Veri',
+
+    updateInterval: DEFAULT_UPDATE_INTERVAL_MS,
+
+    /**
+     * Katman çalışma zamanı parametreleri.
+     * @param {Object} [params={}]
+     */
+    setParams(params = {}) {
+      if (typeof params.selectedStationId === 'string') {
+        parts.selection?.selectStation?.(params.selectedStationId);
+      }
+      parts.rendering?.refreshStyles?.();
+    },
+
+    /**
+     * Aktif parametre durumunu döner.
+     * @returns {Object}
+     */
+    getParams() {
+      return {
+        selectedStationId: layerState._selectedStationId || null,
+      };
+    },
+
+    /**
+     * Taktik HUD tespiti için nokta verilerini döner.
+     */
+    getDetectableObjects(options = {}) {
+      if (!layerState._enabled || !layerState._stations?.length) return [];
+      const maxCount = Number.isFinite(options.maxCount)
+        ? Math.max(1, Math.floor(options.maxCount))
+        : layerState._stations.length;
+
+      return layerState._stations.slice(0, maxCount).map((station) => ({
+        position: station.position,
+        sourceId: station.id,
+        id: `İBB-${station.name || station.id}`,
+        type: 'CBS',
+      }));
+    },
+
+    /**
+     * Katman durum ve istatistik çipi.
+     */
+    getStats() {
+      return {
+        count: layerState._count || (layerState._enabled ? 1 : 0),
+        countLabel: layerState._enabled ? 'İBB AKTİF' : '—',
+        lastUpdate: layerState._lastUpdate || Date.now(),
+        error: layerState._lastError || null,
+        loading: Boolean(layerState._loading),
+        source: 'İBB CBS / Açık Veri',
+        coverage: 'İstanbul',
+      };
+    },
+
+    /**
+     * Dinleyici aboneliği.
+     */
+    subscribe(callback) {
+      if (typeof callback !== 'function') return () => {};
+      layerState._listeners?.add(callback);
+      return () => {
+        layerState._listeners?.delete(callback);
+      };
+    },
+  };
+
+  return { methods };
+}

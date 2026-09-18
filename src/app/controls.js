@@ -27,12 +27,12 @@ export function createApplicationControls({
   const cockpitCloudEffects = initCockpitCloudEffects(viewer);
   defer(() => cockpitCloudEffects?.destroy());
 
-  // If no share link state, do default fly-to Austin
+  // If no share link state, do default fly-to Ankara
   if (!styleManager.hasShareState) {
-    loaderStatus.textContent = 'Flying to Austin, TX...';
+    loaderStatus.textContent = 'Hedef noktaya intikal ediliyor: Ankara, Türkiye...';
     defer(flyToAustin(viewer));
   } else {
-    loaderStatus.textContent = 'Restoring shared view...';
+    loaderStatus.textContent = 'Görev parametreleri yükleniyor...';
   }
 
   return { styleManager, weatherEffects, cockpitCloudEffects };

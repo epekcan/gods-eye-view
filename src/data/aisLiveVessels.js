@@ -11,7 +11,7 @@ import * as focus from './focusDeemphasis.js';
 import * as worldFocus from '../worldFocus.js';
 import * as render from '../renderGovernor.js';
 
-const aisLiveVesselsLayer = createVesselLayer({
+const baseAisLayer = createVesselLayer({
   source: createAisStreamSource({
     apiUrl: import.meta.env?.VITE_AIS_LIVE_API_URL || '/api/ais-live',
   }),
@@ -32,39 +32,47 @@ const aisLiveVesselsLayer = createVesselLayer({
     render,
   },
 });
+
 export { AIS_FIRST_CONNECT_GRACE_MS } from '../layers/vessels/policy.js';
-export const deriveAisFeedError = aisLiveVesselsLayer.deriveAisFeedError;
+export const deriveAisFeedError = baseAisLayer.deriveAisFeedError;
 export const classifyAisFeedSnapshot =
-  aisLiveVesselsLayer.classifyAisFeedSnapshot;
-export const mapAnalystRecord = aisLiveVesselsLayer.mapAnalystRecord;
-export const vesselDatumHeightM = aisLiveVesselsLayer.vesselDatumHeightM;
-export const reduceVesselSelection = aisLiveVesselsLayer.reduceVesselSelection;
+  baseAisLayer.classifyAisFeedSnapshot;
+export const mapAnalystRecord = baseAisLayer.mapAnalystRecord;
+export const vesselDatumHeightM = baseAisLayer.vesselDatumHeightM;
+export const reduceVesselSelection = baseAisLayer.reduceVesselSelection;
 export const applyVesselFocusDeemphasis =
-  aisLiveVesselsLayer.applyVesselFocusDeemphasis;
-export const buildVesselCard = aisLiveVesselsLayer.buildVesselCard;
+  baseAisLayer.applyVesselFocusDeemphasis;
+export const buildVesselCard = baseAisLayer.buildVesselCard;
 export const buildSelectedVesselCard =
-  aisLiveVesselsLayer.buildSelectedVesselCard;
-export const cardScreenSeparated = aisLiveVesselsLayer.cardScreenSeparated;
+  baseAisLayer.buildSelectedVesselCard;
+export const cardScreenSeparated = baseAisLayer.cardScreenSeparated;
 export const _bindVesselInteractionForTest =
-  aisLiveVesselsLayer.testing._bindVesselInteractionForTest;
+  baseAisLayer.testing._bindVesselInteractionForTest;
 export const _setVesselStateForTest =
-  aisLiveVesselsLayer.testing._setVesselStateForTest;
+  baseAisLayer.testing._setVesselStateForTest;
 export const _setVesselOverlayHostForTest =
-  aisLiveVesselsLayer.testing._setVesselOverlayHostForTest;
+  baseAisLayer.testing._setVesselOverlayHostForTest;
 export const _updateVesselCardsForTest =
-  aisLiveVesselsLayer.testing._updateVesselCardsForTest;
+  baseAisLayer.testing._updateVesselCardsForTest;
 export const _reconcileVesselsForTest =
-  aisLiveVesselsLayer.testing._reconcileVesselsForTest;
+  baseAisLayer.testing._reconcileVesselsForTest;
 export const _applyAisFeedSnapshotForTest =
-  aisLiveVesselsLayer.testing._applyAisFeedSnapshotForTest;
+  baseAisLayer.testing._applyAisFeedSnapshotForTest;
 export const _loadLivePositionsForTest =
-  aisLiveVesselsLayer.testing._loadLivePositionsForTest;
+  baseAisLayer.testing._loadLivePositionsForTest;
 export const _beginAisSessionForTest =
-  aisLiveVesselsLayer.testing._beginAisSessionForTest;
+  baseAisLayer.testing._beginAisSessionForTest;
 export const _setAisRuntimeForTest =
-  aisLiveVesselsLayer.testing._setAisRuntimeForTest;
+  baseAisLayer.testing._setAisRuntimeForTest;
 export const _getVesselFeedStateForTest =
-  aisLiveVesselsLayer.testing._getVesselFeedStateForTest;
+  baseAisLayer.testing._getVesselFeedStateForTest;
 export const _getVesselStateForTest =
-  aisLiveVesselsLayer.testing._getVesselStateForTest;
+  baseAisLayer.testing._getVesselStateForTest;
+
+const aisLiveVesselsLayer = {
+  ...baseAisLayer,
+  name: 'Canlı Gemi Trafiği (AIS)',
+  source: 'AISHub · Küresel Deniz Trafiği',
+};
+
 export default aisLiveVesselsLayer;

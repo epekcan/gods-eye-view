@@ -82,7 +82,7 @@ export function createQueries({
   }
 
   /**
-   * Normalize a value to a trimmed string. A whitespace-only field ("   ") is
+   * Normalize a value to a trimmed string. A whitespace-only field ("    ") is
    * truthy, so every label chain must trim FIRST and then fall through.
    * @param {*} value - Any value (typically a metadata string or null).
    * @returns {string} Trimmed string, or '' if falsy.
@@ -267,7 +267,7 @@ export function createQueries({
 
     id: 'flights',
 
-    name: 'Live Flights',
+    name: 'Canlı Uçuşlar',
 
     icon: '✈️',
 
@@ -434,7 +434,7 @@ export function createQueries({
         if (!object) {
           object = {
             sourceId: icao24,
-            type: 'AIR',
+            type: 'HAVA',
             _weldPos: new Cesium.Cartesian3(),
           };
           flightState._detectionObjects.set(icao24, object);
@@ -758,7 +758,7 @@ export function createQueries({
       if (outcome.status !== 'accepted') {
         return {
           status: 'source-unavailable',
-          reason: 'OpenSky snapshot unavailable',
+          reason: 'OpenSky anlık görüntüsü kullanılamıyor',
           refreshEpoch: outcome.epoch,
           source: outcome.source,
           coverage: outcome.coverage,
@@ -767,7 +767,7 @@ export function createQueries({
       if (!outcome.ids.has(id)) {
         return {
           status: 'missing',
-          reason: 'target-absent-from-snapshot',
+          reason: 'hedef anlık görüntüde yok',
           refreshEpoch: outcome.epoch,
           source: outcome.source,
           coverage: outcome.coverage,
@@ -788,8 +788,9 @@ export function createQueries({
           }
         : {
             status: 'source-unavailable',
-            reason: 'target-not-renderable',
+            reason: 'hedef oluşturulamaz',
             refreshEpoch: outcome.epoch,
+            source: outcome.source,
           };
     },
 

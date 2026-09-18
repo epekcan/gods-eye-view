@@ -195,7 +195,7 @@ export function createQueries({
 
     id: 'military',
 
-    name: 'Military Flights',
+    name: 'Askeri Uçuşlar',
 
     icon: '🎖️',
 

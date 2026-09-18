@@ -19,20 +19,11 @@ export const PRESENTED_MAP_STACK_IDS = Object.freeze([
   'bing-labels',
   'esri-imagery',
   'osm',
+  'ibb',
+  'hgm-uydu',
+  'hgm-fiziki',
 ]);
 
-/**
- * Presentation model for one map-stack chip.
- *
- * Unavailable is NOT the same as needs-an-ion-token: `photoreal` is unavailable
- * whenever the Google tileset failed to load (the startup fallback-to-OSM
- * case), and a future stack may have its own reason. The ION badge is therefore
- * gated on the stack's own `requiresIon` flag, and the tooltip quotes the
- * controller's `unavailableReason` rather than assuming one.
- * @param {{id: string, label: string, available?: boolean, requiresIon?: boolean, unavailableReason?: string|null}} stack - Stack descriptor from `getStacks()`.
- * @param {string|null} activeId - Currently active stack id.
- * @returns {{id: string, label: string, available: boolean, active: boolean, requiresIon: boolean, requirement: string, unavailableHint: string, title: string}}
- */
 export function mapStackChipModel(stack, activeId) {
   const available = stack?.available !== false;
   const label = String(stack?.label ?? stack?.id ?? '');
@@ -49,21 +40,12 @@ export function mapStackChipModel(stack, activeId) {
     available,
     active: !!stack?.id && stack.id === activeId,
     requiresIon,
-    // Dropdown parity: unavailable options read "<label> · ion key". A chip has
-    // no room for that, so an ion-backed stack gets a compact badge; every
-    // unavailable chip carries the real reason in its tooltip.
     requirement: !available && requiresIon ? 'ION' : '',
     unavailableHint,
     title: available ? label : unavailableHint,
   };
 }
 
-/**
- * @param {Array<object>} stacks - `MapStackController.getStacks()` output.
- * @param {string|null} activeId - Currently active stack id.
- * @returns {Array<object>} One chip model per approved presentation id, in
- *   `PRESENTED_MAP_STACK_IDS` order; unlisted stacks stay outside this presentation.
- */
 export function mapStackChipModels(stacks, activeId) {
   const stacksById = new Map(
     (Array.isArray(stacks) ? stacks : []).map((stack) => [stack?.id, stack]),
@@ -73,17 +55,6 @@ export function mapStackChipModels(stacks, activeId) {
     .map((stack) => mapStackChipModel(stack, activeId));
 }
 
-/**
- * Renders the chip row into `container`, replacing any previous chips.
- * @param {HTMLElement} container - Row element.
- * @param {Array<object>} stacks - `MapStackController.getStacks()` output.
- * @param {object} [options]
- * @param {string|null} [options.activeId] - Currently active stack id.
- * @param {(stackId: string) => void} [options.onSelect] - Selection callback.
- * @param {Document} [options.doc] - Document override (tests).
- * @param {(element: HTMLElement, type: string, listener: Function) => void} [options.bind] - Listener owner override.
- * @returns {Array<object>} The rendered chip models.
- */
 export function renderMapStackChips(
   container,
   stacks,
@@ -145,13 +116,6 @@ export function renderMapStackChips(
   return models;
 }
 
-/**
- * Re-points the active chip at controller state. Availability never changes at
- * runtime (it tracks the ion token), so only the active/pressed pair is synced.
- * @param {HTMLElement} container - Row element.
- * @param {string|null} activeId - Currently active stack id.
- * @returns {void}
- */
 export function syncMapStackChips(container, activeId) {
   const chips = container?.children;
   if (!chips) return;

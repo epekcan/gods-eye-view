@@ -9,13 +9,15 @@ import {
   setOverlayEntries,
   setOverlaySourceVisible,
 } from '../overlays/worldOverlay.js';
+
 const overlayHost = Object.freeze({
   clearSource: clearOverlaySource,
   setEntries: setOverlayEntries,
   setVisible: setOverlaySourceVisible,
 });
+
 export function createTeleGeographySubmarineCableLayer(options = {}) {
-  return createSubmarineCableLayer({
+  const layer = createSubmarineCableLayer({
     source: createBundledCableSource(),
     overlayHost,
     screenSpaceEventHandlerFactory: (canvas) =>
@@ -23,10 +25,18 @@ export function createTeleGeographySubmarineCableLayer(options = {}) {
     mapStackEventTarget: typeof window !== 'undefined' ? window : null,
     ...options,
   });
+
+  return {
+    ...layer,
+    name: 'Denizaltı Kabloları',
+    source: 'TeleGeography · Küresel Veri',
+  };
 }
+
 export function createCableOverlayPublisher(options = {}) {
   return createPublisher({ host: overlayHost, ...options });
 }
+
 export {
   CABLE_REFERENCE_LABEL_WINNER_CAP,
   CABLE_OVERLAY_SOURCE_ID,
@@ -44,4 +54,5 @@ export {
   createCableReferenceSweepGate,
   updateCableReferenceStem,
 } from '../layers/submarineCables/index.js';
+
 export default createTeleGeographySubmarineCableLayer();

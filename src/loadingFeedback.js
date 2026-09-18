@@ -29,9 +29,6 @@ export function normalizeLayerLoading(layer = {}) {
   const count = finiteCount(stats.count);
   const stoppingInstallations =
     ['military-installations', 'alpr-cameras'].includes(layer.id) && disabling;
-  // Guidance statuses ask the user to act (zoom in, run a search). They are
-  // normal operation, never a batch failure — mirrors layerFeedState's carve-out
-  // so a prompt stored alongside the status cannot turn the chip red.
   const guidance = GUIDANCE_STATUSES.includes(status);
   const error = stoppingInstallations
     ? null
@@ -49,7 +46,7 @@ export function normalizeLayerLoading(layer = {}) {
   const accepted = Boolean(stats.lastUpdate) || count > 0;
   return {
     id: String(layer.id || ''),
-    label: String(layer.name || layer.id || 'Layer'),
+    label: String(layer.name || layer.id || 'Katman'),
     loading,
     disabling,
     refresh:
@@ -140,9 +137,6 @@ export function createGlobalStatusNotice(
     detail: String(detail || '').trim(),
     persistent: !!persistent,
     dwellMs: persistent ? null : LOADING_FAILURE_DWELL_MS,
-    // A finite notice starts its dwell only when it first wins presentation.
-    // Otherwise a higher-priority manager failure could consume the whole
-    // deadline while this notice remained queued and invisible.
     hideAt: null,
   };
 }
@@ -181,8 +175,7 @@ export function canPresentDeferredStatusNotice(
 
 /**
  * Present the shared status surface without allowing a persistent notice to
- * hide a terminal manager failure. Failure dwell starts when the manager
- * reports it, so it must remain the highest-priority presentation while live.
+ * hide a terminal manager failure.
  */
 export function presentGlobalLoadingStatus(
   notice,
@@ -213,7 +206,7 @@ export function createTrafficSyncFeedbackState() {
 
 /**
  * Reduce one sampled Street Traffic status without extending completion on
- * every animation-loop poll. Coverage describes accepted data, not work.
+ * every animation-loop poll.
  */
 export function reduceTrafficSyncFeedback(
   previous,
@@ -241,10 +234,7 @@ export function reduceTrafficSyncFeedback(
       busy: true,
       visible: true,
       confirmationUntil: 0,
-      // Neutral default: the layer always supplies its own LIVE/SIMULATED
-      // label, and a fallback string must never claim a live feed on a
-      // keyless build.
-      label: label || 'syncing road network',
+      label: label || 'yol ağı eşitleniyor',
       progressText: hasProgress ? `${progressPct}%` : '...',
     };
   }
@@ -261,12 +251,6 @@ export function reduceTrafficSyncFeedback(
     visible,
     confirmationUntil: visible ? confirmationUntil : 0,
     label: visible ? label : '',
-    // The settled flash carries NO progress number. A settled chip is 100% by
-    // definition — the value never varied — and printing it beside a label
-    // that already ends in a real measurement produced the self-contradicting
-    // "LIVE · TomTom flow · 0% cov  100%". Coverage is the honest number, so
-    // it is the only one left standing; the progress slot belongs to work in
-    // flight.
     progressText: '',
   };
 }
@@ -393,9 +377,9 @@ export function presentLoadingFeedback(state, summary, nowMs) {
     return {
       state: 'retry',
       label: (
-        camera.cameraRetry.error || 'Overpass temporarily unavailable'
+        camera.cameraRetry.error || 'Overpass geçici olarak erişilemiyor'
       ).toUpperCase(),
-      detail: `ALPR cameras · ${seconds ? `retrying in ${seconds}s` : 'retry pending'}`,
+      detail: `PTS Kameraları · ${seconds ? `${seconds}sn içinde yeniden deneniyor` : 'yeniden deneme bekleniyor'}`,
     };
   }
 
@@ -410,8 +394,7 @@ export function presentLoadingFeedback(state, summary, nowMs) {
         (record.error || record.unavailable || record.keyRequired),
     ) ||
     (state?.failedEventIds || []).some((id) => id !== 'military-installations');
-  // Keep the actual retry visible between attempts, without hiding another
-  // participant's failure or pretending that a scheduled retry is fetching.
+
   if (site && !summary.active.length && !otherFailure) {
     const message = installationFeedback(site.installationRetry);
     const [label, detail] = message.split(' — ');
@@ -420,18 +403,18 @@ export function presentLoadingFeedback(state, summary, nowMs) {
   if (!state?.visible) return null;
   if (state.phase === 'terminal') {
     const labels = {
-      complete: 'LOAD COMPLETE',
-      cancelled: 'LOAD CANCELLED',
-      error: 'LOAD FAILED',
+      complete: 'YÜKLEME TAMAMLANDI',
+      cancelled: 'YÜKLEME İPTAL EDİLDİ',
+      error: 'YÜKLEME BAŞARISIZ OLDU',
     };
     const label =
       state.operation === 'disabling' && state.terminal === 'complete'
-        ? 'LIVE DATA OFF'
+        ? 'CANLI VERİ KAPATILDI'
         : state.terminal === 'complete' &&
             state.activeIds?.length === 1 &&
             state.activeIds[0] === 'military-installations'
-          ? 'MAPPED SITES LOADED'
-          : labels[state.terminal] || 'LOAD COMPLETE';
+          ? 'HARİTA ALANLARI YÜKLENDİ'
+          : labels[state.terminal] || 'YÜKLEME TAMAMLANDI';
     return { state: state.terminal, label, detail: '' };
   }
   const active = summary.active;
@@ -439,8 +422,8 @@ export function presentLoadingFeedback(state, summary, nowMs) {
     return {
       state: 'loading',
       label: active[0].cameraRetry.retrying
-        ? 'RETRYING ALPR CAMERAS'
-        : 'FETCHING ALPR CAMERAS',
+        ? 'PTS KAMERALARI TEKRAR DENENİYOR'
+        : 'PTS KAMERALARI YÜKLENİYOR',
       detail: 'OpenStreetMap · Overpass',
     };
   }
@@ -453,17 +436,17 @@ export function presentLoadingFeedback(state, summary, nowMs) {
     return {
       state: 'loading',
       label: active[0].installationRetry.retrying
-        ? 'RETRYING MAPPED SITES'
-        : 'FETCHING MAPPED SITES',
+        ? 'TESİS NOKTALARI TEKRAR DENENİYOR'
+        : 'TESİS NOKTALARI YÜKLENİYOR',
       detail: 'OpenStreetMap · Overpass',
     };
   }
   const elapsed = Math.max(0, nowMs - state.startedAt);
   const label = summary.disabling
-    ? 'TURNING OFF LIVE DATA'
+    ? 'CANLI VERİ KAPATILIYOR'
     : summary.refresh
-      ? 'REFRESHING LIVE DATA'
-      : 'LOADING LIVE DATA';
+      ? 'CANLI VERİ YENİLENİYOR'
+      : 'CANLI VERİLER YÜKLENİYOR';
   const names = active
     .slice(0, 2)
     .map((record) => record.label)

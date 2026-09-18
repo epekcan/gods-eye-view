@@ -1,25 +1,13 @@
 import { createSurfaceKeyboard } from './ui/surfaceKeyboard.js';
 
 /**
- * The POWER UP surface — paste a key, get a power.
- *
- * A small chip sits bottom-right whenever the app is running under the dev
- * server with keys still missing. It opens a dialog rendered ENTIRELY from
- * GET /api/setup/status (the registry lives in src/keySetupCore.mjs and this
- * module never duplicates it): one row per key, what it unlocks, where to get
- * it, and a paste field. SAVE posts to /api/setup/keys, which writes the
- * repo-root .env and restarts the dev server — Vite's client then reloads the
- * page itself, and the pasted key is simply *on*. No hand-edited env files.
- *
- * The surface self-destructs where it cannot work: a prod build (no endpoint)
- * or a LAN visitor (loopback-only endpoint) fails the status fetch, and both
- * the chip and the dialog are removed outright.
+ * TARGIL IRS — Sağlayıcı ve Anahtar Kurulum Yüzeyi
  */
 
-/** Chip label — pure, exported for tests. */
+/** Chip label — Taktik buton etiketi */
 export function keySetupChipLabel(status) {
   const missing = Math.max(0, (status?.total || 0) - (status?.setCount || 0));
-  return missing > 0 ? `POWER UP · ${missing} ${missing === 1 ? 'KEY' : 'KEYS'} WAITING` : 'POWERED UP';
+  return missing > 0 ? `API BAĞLANTILARI · ${missing} EKSİK ANAHTAR` : 'TÜM BAĞLANTILAR AKTİF';
 }
 
 /**
@@ -37,13 +25,9 @@ export function collectKeyUpdates(fields) {
 }
 
 /**
- * After the FIRST Google key lands, the restart's reload should boot the
- * photoreal default — not faithfully restore the auto-selected keyless OSM
- * basemap from the URL's live share hash. Strips only `map=osm`: a stack under
- * any other name was chosen or shared on purpose and survives, and so does
- * everything else in the hash (camera, style, layers). Pure, exported for tests.
+ * Strips only `map=osm` when primary keys land.
  * @param {string} hash Location hash without the leading '#'.
- * @returns {string|null} The rewritten hash, or null when there is nothing to strip.
+ * @returns {string|null}
  */
 export function stripKeylessBasemapFromHash(hash) {
   if (!hash) return null;
@@ -59,7 +43,7 @@ export function stripKeylessBasemapFromHash(hash) {
 
 const TIER_DOTS = Object.freeze({ metered: '🔴', free: '🟡' });
 
-/** Build one key row. All content is our own registry text, set via textContent. */
+/** Build one key row. */
 function buildRow(documentRef, key) {
   const row = documentRef.createElement('section');
   row.className = 'key-setup-row';
@@ -78,22 +62,20 @@ function buildRow(documentRef, key) {
   const tier = documentRef.createElement('span');
   tier.className = 'key-setup-tier';
   tier.textContent = TIER_DOTS[key.tier] || '';
-  tier.title = key.tier === 'metered' ? 'Metered — a billing-enabled account' : 'Free key — register, paste, done';
+  tier.title = key.tier === 'metered' ? 'Ücretli / Faturalandırma hesabı gerekir' : 'Ücretsiz — kayıt ol, anahtarı yapıştır';
   head.append(led, title, tier);
   if (key.clientExposed) {
     const exposed = documentRef.createElement('span');
     exposed.className = 'key-setup-exposed';
-    exposed.textContent = 'browser-side';
-    exposed.title = 'This key runs in the browser by design — restrict it at the provider (see SECURITY.md)';
+    exposed.textContent = 'istemci taraflı';
+    exposed.title = 'Bu anahtar tarayıcıda çalışır — sağlayıcı panelinden alan adı kısıtlaması yapınız';
     head.append(exposed);
   }
   if (external) {
-    // Externally supplied credentials (shell env, Keychain, a launcher) are
-    // facts this panel reports, never values it rewrites or deletes.
     const badge = documentRef.createElement('span');
     badge.className = 'key-setup-external';
-    badge.textContent = 'configured externally';
-    badge.title = 'Supplied by your environment, Keychain, or launcher — change it where it was set';
+    badge.textContent = 'harici yapılandırma';
+    badge.title = 'Ortam değişkeni olarak ayarlanmış';
     head.append(badge);
   }
   const get = documentRef.createElement('a');
@@ -101,7 +83,7 @@ function buildRow(documentRef, key) {
   get.href = key.getUrl;
   get.target = '_blank';
   get.rel = 'noopener noreferrer';
-  get.textContent = key.set ? 'MANAGE ↗' : 'GET KEY ↗';
+  get.textContent = key.set ? 'YÖNET ↗' : 'ANAHTAR AL ↗';
   head.append(get);
 
   const unlocks = documentRef.createElement('p');
@@ -114,16 +96,14 @@ function buildRow(documentRef, key) {
     fields.className = 'key-setup-fields';
     for (const envVar of key.envVars) {
       const input = documentRef.createElement('input');
-      // Passwords-style so a pasted key never shows on a shared or recorded
-      // screen — this app gets screen-recorded a lot.
       input.type = 'password';
       input.autocomplete = 'off';
       input.spellcheck = false;
       input.dataset.envVar = envVar;
       input.setAttribute('aria-label', envVar);
       input.placeholder = key.set
-        ? `${envVar} saved — paste to replace`
-        : `paste ${envVar}`;
+        ? `${envVar} kayıtlı — değiştirmek için yapıştırın`
+        : `${envVar} yapıştırın`;
       fields.append(input);
     }
     if (key.managed === 'file') {
@@ -131,8 +111,8 @@ function buildRow(documentRef, key) {
       remove.type = 'button';
       remove.className = 'key-setup-remove';
       remove.dataset.keySetupRemove = JSON.stringify(key.envVars);
-      remove.textContent = 'REMOVE';
-      remove.title = `Remove ${key.title} from this app's saved keys`;
+      remove.textContent = 'SİL';
+      remove.title = `${key.title} anahtarını kayıtlı yapılandırmadan kaldır`;
       fields.append(remove);
     }
     row.append(fields);
@@ -140,10 +120,6 @@ function buildRow(documentRef, key) {
   return row;
 }
 
-/**
- * Wire the chip + dialog. Fire-and-forget from main.js; resolves to null when
- * the surface has no business existing (prod build, LAN visitor, no markup).
- */
 export async function initKeySetup({ documentRef = globalThis.document, fetchImpl, signal } = {}) {
   const chip = documentRef?.getElementById?.('key-setup-chip');
   const root = documentRef?.getElementById?.('key-setup');
@@ -172,8 +148,6 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
     status = await response.json();
     if (disposed) return null;
   } catch {
-    // Prod build or non-loopback visitor: the surface cannot function, so it
-    // does not exist. (The README covers .env for headless/self-host setups.)
     destroy();
     return null;
   }
@@ -191,8 +165,6 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
     if (disposed) return;
     status = nextStatus;
     chipLabel.textContent = keySetupChipLabel(status);
-    // Fully powered is the owner's clean screen: the chip retires. The dialog
-    // stays reachable this session (and via ?setup=1) to swap or verify keys.
     chip.hidden = status.setCount >= status.total;
     if (!rowsHost) return;
     rowsHost.textContent = '';
@@ -236,15 +208,15 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
   const say = (text) => { if (statusLine) statusLine.textContent = text; };
 
   const storeLabel = () => (status?.store === 'pinokio-environment'
-    ? 'your app configuration'
-    : 'your local .env');
+    ? 'uygulama yapılandırmanıza'
+    : 'yerel .env dosyanıza');
 
   const submitUpdates = async (updates, doneVerb) => {
     if (disposed || busy) return;
     const googleWasUnset = !status?.keys?.find((key) => key.id === 'google-maps')?.set;
     busy = true;
     applyButton?.setAttribute('aria-disabled', 'true');
-    say('Saving…');
+    say('Kaydediliyor…');
     try {
       const response = await doFetch('/api/setup/keys', {
         method: 'POST',
@@ -255,7 +227,7 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
       const payload = await response.json().catch(() => ({}));
       if (disposed) return;
       if (!response.ok || !payload.ok) {
-        say(payload.error || `Save failed (${response.status}).`);
+        say(payload.error || `Kayıt başarısız (${response.status}).`);
         return;
       }
       for (const input of root.querySelectorAll('input[data-env-var]')) input.value = '';
@@ -265,18 +237,14 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
           try {
             const next = stripKeylessBasemapFromHash(globalThis.location?.hash?.slice(1) || '');
             if (next !== null) globalThis.history?.replaceState?.(null, '', `#${next}`);
-          } catch {
-            // Continuity is a nicety, never a blocker.
-          }
+          } catch {}
         };
         strip();
-        // The live share writer may re-serialize the still-OSM stack before
-        // the restart's reload lands, so strip again at the door.
         globalThis.addEventListener?.('pagehide', strip, { once: true, signal: lifetime.signal });
       }
-      say(`${doneVerb} ${storeLabel()}. Restarting — this page reloads itself.`);
+      say(`${doneVerb} ${storeLabel()}. Sunucu yeniden başlatılıyor — sayfa yenilenecek.`);
     } catch (error) {
-      say(`Save failed: ${error?.message || error}`);
+      say(`Kayıt hatası: ${error?.message || error}`);
     } finally {
       busy = false;
       applyButton?.setAttribute('aria-disabled', 'false');
@@ -290,16 +258,15 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
       inputs.map((input) => ({ envVar: input.dataset.envVar, value: input.value })),
     );
     if (!Object.keys(updates).length) {
-      say('Paste at least one key first.');
+      say('Önce en az bir API anahtarı yapıştırın.');
       return;
     }
-    await submitUpdates(updates, 'Saved to');
+    await submitUpdates(updates, 'Kaydedildi:');
   };
 
   chip.addEventListener('click', openDialog);
   closeButton?.addEventListener('click', close);
   applyButton?.addEventListener('click', onApply);
-  // Remove buttons are rendered per row; delegate so re-renders stay wired.
   rowsHost?.addEventListener('click', (event) => {
     const button = event.target?.closest?.('[data-key-setup-remove]');
     if (disposed || !button || busy) return;
@@ -310,27 +277,20 @@ export async function initKeySetup({ documentRef = globalThis.document, fetchImp
       return;
     }
     if (!Array.isArray(envVars) || !envVars.length) return;
-    // Removal is destructive and — behind a framing defense that should already
-    // stop it — a clickjack target. A confirm turns a single aligned click into
-    // a deliberate two-step the lure cannot pre-satisfy.
     const ok = typeof globalThis.confirm !== 'function'
-      || globalThis.confirm('Remove this key from your saved configuration?');
+      || globalThis.confirm('Bu anahtarı kayıtlı yapılandırmadan kaldırmak istiyor musunuz?');
     if (!ok) return;
     void submitUpdates(
       Object.fromEntries(envVars.map((name) => [name, null])),
-      'Removed from',
+      'Kaldırıldı:',
     );
   });
 
   render(status);
 
-  // Re-entry for a fully-keyed setup, demos, and support: ?setup=1 opens the
-  // dialog even though the chip has retired.
   try {
     if (new URLSearchParams(globalThis.location?.search || '').get('setup') === '1') openDialog();
-  } catch {
-    // An unparsable location never blocks init.
-  }
+  } catch {}
 
   disposeControls = () => {
     open = false;

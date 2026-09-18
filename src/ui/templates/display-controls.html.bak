@@ -1,0 +1,114 @@
+<!-- Post-processing toggles (top-right) -->
+  <div id="pp-toggles" class="panel-collapsible collapsed" data-panel-id="pp-toggles">
+    <div class="compact pp-header-row">
+      <span class="pp-header-label">GÖRÜNÜM</span>
+      <span class="panel-divider" aria-hidden="true"></span>
+      <button class="panel-collapse-btn pp-collapse-btn" data-collapse-target="pp-toggles" title="Paneli daralt">&#x25C0;</button>
+    </div>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn" id="hud-toggle" title="İstihbarat HUD Göstergesi (H)">
+        <span class="pp-icon">&#x25CE;</span>
+        <span class="pp-label">HUD</span>
+      </button>
+      <div class="pp-slider-row" id="hud-layout-row">
+        <span class="pp-slider-mini-label">Düzen</span>
+        <select id="hud-layout-select" class="pp-select" aria-label="HUD düzeni">
+          <option value="tactical">Taktik</option>
+          <option value="operator">Operatör</option>
+          <option value="minimal">Minimal</option>
+        </select>
+      </div>
+    </div>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn" id="detection-toggle" title="Hedef Tespit Katmanı (D)" aria-label="Hedef tespit katmanı" aria-pressed="false">
+        <span class="pp-icon">&#x25A3;</span>
+        <span class="pp-label">TESPİT</span>
+      </button>
+      <div class="pp-slider-row detection-slider-row" id="detection-slider-row">
+        <label class="pp-slider-mini-label" for="detection-density-slider">Yoğunluk</label>
+        <input type="range" class="pp-slider" id="detection-density-slider" min="0" max="100" step="25" value="50" aria-label="Hedef etiket yoğunluğu" />
+        <span class="pp-slider-value" id="detection-density-value">50%</span>
+      </div>
+      <div class="pp-slider-row detection-allocation-row" id="detection-allocation-row">
+        <span class="pp-slider-mini-label">Dağılım</span>
+        <div class="pp-mode-seg detection-allocation-seg" role="radiogroup" aria-label="Hedef etiket dağılımı">
+          <button class="pp-mode-btn active" id="detection-allocation-elastic" data-allocation="ELASTIC" role="radio" aria-checked="true">Dinamik</button>
+          <button class="pp-mode-btn" id="detection-allocation-weighted" data-allocation="WEIGHTED" role="radio" aria-checked="false">Ağırlıklı</button>
+        </div>
+      </div>
+      <div class="pp-slider-row detection-fade-row" id="detection-fade-row">
+        <label class="pp-slider-mini-label" for="detection-fade-slider">Sönümleme</label>
+        <input type="range" class="pp-slider" id="detection-fade-slider" min="0" max="40" step="1" value="7" aria-label="Merkez dışı sönümleme mesafesi" title="Odak çemberi dışındaki hedeflerin sönümleme mesafesi" />
+        <span class="pp-slider-value" id="detection-fade-value">7%</span>
+      </div>
+      <div class="pp-slider-row detection-opacity-row" id="detection-opacity-row">
+        <label class="pp-slider-mini-label" for="detection-opacity-slider">Dış Opaklık</label>
+        <input type="range" class="pp-slider" id="detection-opacity-slider" min="0" max="100" step="1" value="1" aria-label="Merkez dışı opaklık" title="Odak çemberi dışındaki etiket ve bilgi kartlarının görünürlüğü" />
+        <span class="pp-slider-value" id="detection-opacity-value">1%</span>
+      </div>
+    </div>
+    <!-- The one shared preset-parameter surface is inserted here at runtime. -->
+    <div id="param-slider-panel">
+      <div class="param-panel-header">
+        <span class="param-panel-title">PARAMETRELER</span>
+        <span class="param-panel-divider"></span>
+        <button class="panel-collapse-btn" id="param-panel-collapse-btn" data-collapse-target="param-slider-panel" title="Paneli daralt">−</button>
+      </div>
+      <div id="param-sliders"></div>
+    </div>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn active" id="models3d-toggle" aria-pressed="true" title="3D hava araçları — uzakta simgeler, yakında 3D modeller">
+        <span class="pp-icon">&#x2708;</span>
+        <span class="pp-label">3D</span>
+      </button>
+      <div class="pp-slider-row visible" id="models3d-mode-row">
+        <span class="pp-slider-mini-label">Modeller</span>
+        <div class="pp-mode-seg" role="radiogroup" aria-label="3D model kapsamı">
+          <button class="pp-mode-btn active" id="models3d-mode-proximity" data-mode="proximity" role="radio" aria-checked="true">Yakındakiler</button>
+          <button class="pp-mode-btn" id="models3d-mode-all" data-mode="all" role="radio" aria-checked="false">Tümü</button>
+        </div>
+      </div>
+    </div>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn active" id="scope-toggle" title="Vizör Maskesi — dairesel optik odak çemberi" aria-pressed="true">
+        <span class="pp-icon material-symbols-outlined" aria-hidden="true">adjust</span>
+        <span class="pp-label">Vizör</span>
+      </button>
+      <div class="pp-slider-row visible" id="scope-slider-row">
+        <span class="pp-slider-mini-label">Yumuşatma</span>
+        <input type="range" class="pp-slider" id="scope-feather-slider" min="0" max="100" value="11" aria-label="Vizör kenar yumuşatma oranı" title="Odak çemberi kenar geçiş yumuşaklığı" />
+        <span class="pp-slider-value" id="scope-feather-value">11%</span>
+      </div>
+    </div>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn" id="celestial-toggle" title="Göksel Halka — tüm yerküreyi gösterir" aria-pressed="false">
+        <span class="pp-icon material-symbols-outlined" aria-hidden="true">flare</span>
+        <span class="pp-label">Küre</span>
+      </button>
+    </div>
+    <button class="pp-toggle-btn" id="clean-view-toggle" title="Arayüzü gizle">
+      <span class="pp-icon">&#x25A1;</span>
+      <span class="pp-label">Temiz Görünüm</span>
+    </button>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn" id="bloom-toggle" title="Işık Halesi (Bloom)">
+        <span class="pp-icon">&#x2728;</span>
+        <span class="pp-label">Parlama</span>
+      </button>
+      <div class="pp-slider-row" id="bloom-slider-row">
+        <input type="range" class="pp-slider" id="bloom-intensity-slider" min="0" max="200" value="0" aria-label="Parlama yoğunluğu" />
+        <span class="pp-slider-value" id="bloom-intensity-value">0%</span>
+      </div>
+    </div>
+    <div class="pp-toggle-group">
+      <button class="pp-toggle-btn" id="sharpen-toggle" title="Görüntü Keskinleştirme">
+        <span class="pp-icon">&#x1F50D;</span>
+        <span class="pp-label">Keskinlik</span>
+      </button>
+      <div class="pp-slider-row" id="sharpen-slider-row">
+        <input type="range" class="pp-slider" id="sharpen-intensity-slider" min="0" max="100" value="49" aria-label="Keskinlik seviyesi" />
+        <span class="pp-slider-value" id="sharpen-intensity-value">49%</span>
+      </div>
+    </div>
+  </div>
+  <button id="clean-view-exit" title="Arayüz kontrollerini geri getir">ARAYÜZÜ GÖSTER</button>

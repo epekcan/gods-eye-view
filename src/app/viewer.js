@@ -28,6 +28,19 @@ export function createApplicationViewer({ container, creditContainer }) {
     viewer.scene.skyAtmosphere.atmosphereLightIntensity = 18;
     viewer.scene.skyAtmosphere.saturationShift = -0.12;
     viewer.scene.skyAtmosphere.brightnessShift = -0.08;
+
+    setTimeout(() => {
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(32.8597, 39.9334, 1800000.0),
+        orientation: {
+          heading: Cesium.Math.toRadians(0.0),
+          pitch: Cesium.Math.toRadians(-89.0),
+          roll: 0.0,
+        },
+        duration: 1.5,
+      });
+    }, 1000);
+
     return viewer;
   } catch (error) {
     viewer.destroy();

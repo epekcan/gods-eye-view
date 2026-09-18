@@ -127,8 +127,8 @@ export function normalizeEarthquakeSnapshot(geojson) {
       (mag != null && (!Number.isFinite(mag) || mag > 10))
     )
       return null;
-    // A missing magnitude cannot establish that this event meets M2.5+.
-    if (mag == null || mag < 2.5) continue;
+    // Türkiye'deki mikro depremleri yakalamak için eşik M1.0 olarak ayarlandı
+    if (mag == null || mag < 1.0) continue;
     const stableId =
       feature.id == null || feature.id === ''
         ? `event-${index + 1}`

@@ -1,0 +1,69 @@
+import * as Cesium from 'cesium';
+
+export const MAP_STACKS = [
+  {
+    id: 'photoreal',
+    label: 'Google 3D',
+    shortLabel: '3D',
+    kind: 'photoreal',
+    requiresIon: false,
+  },
+  {
+    id: 'bing-aerial',
+    label: 'Bing Aerial',
+    shortLabel: 'Aerial',
+    kind: 'ion',
+    style: Cesium.IonWorldImageryStyle.AERIAL,
+    requiresIon: true,
+  },
+  {
+    id: 'bing-labels',
+    label: 'Bing Labels',
+    shortLabel: 'Labels',
+    kind: 'ion',
+    style: Cesium.IonWorldImageryStyle.AERIAL_WITH_LABELS,
+    requiresIon: true,
+  },
+  {
+    id: 'esri-imagery',
+    label: 'Esri Satellite',
+    shortLabel: 'SAT',
+    kind: 'esri-imagery',
+    requiresIon: false,
+  },
+  {
+    id: 'ibb',
+    label: 'İBB HARİTA',
+    shortLabel: 'İBB',
+    kind: 'ibb',
+    requiresIon: false,
+  },
+  {
+    id: 'hgm-uydu',
+    label: 'HGM HİBRİT',
+    shortLabel: 'HGM UYDU',
+    kind: 'hgm-uydu',
+    requiresIon: false,
+  },
+  {
+    id: 'hgm-fiziki',
+    label: 'HGM FİZİKİ',
+    shortLabel: 'FİZİKİ',
+    kind: 'hgm-fiziki',
+    requiresIon: false,
+  },
+  {
+    id: 'tkgm-ortofoto',
+    label: 'TKGM ORTOFOTO',
+    shortLabel: 'TKGM',
+    kind: 'tkgm-ortofoto',
+    requiresIon: false,
+  },
+  {
+    id: 'osm',
+    label: 'OSM',
+    shortLabel: 'OSM',
+    kind: 'osm',
+    requiresIon: false,
+  },
+];
