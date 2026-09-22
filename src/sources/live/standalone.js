@@ -153,7 +153,6 @@ export function createAisStreamSource({
   return {
     label: 'AISStream',
     async getSnapshot({ maxRows = 12000 } = {}, { signal } = {}) {
-      // AIS verisi backend olmadan çalışmayacağı için çökmemesi adına boş liste döndürülür
       return {
         records: [],
         timestamp: Date.now(),
