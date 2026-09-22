@@ -7,7 +7,6 @@ import {
 } from './contract.js';
 import {
   normalizeAircraftTrack,
-  openSkySnapshot,
   readsbSnapshot,
   readsbIdentities,
 } from './aircraft.js';
@@ -16,12 +15,12 @@ import { normalizeVesselTrack, vesselSnapshot } from './vessels.js';
 const defaultFetch = (...args) => globalThis.fetch(...args);
 const header = (response, name) => response.headers?.get?.(name);
 
-function openSkyError(response) {
-  const error = httpError(response, 'OpenSky');
+function flightError(response, provider) {
+  const error = httpError(response, provider);
   if (response.status === 429) {
-    error.message = 'OpenSky hız sınırı (rate limit)';
+    error.message = `${provider} hız sınırı (rate limit)`;
   } else {
-    error.message = `OpenSky HTTP ${response.status}`;
+    error.message = `${provider} HTTP ${response.status}`;
   }
   return error;
 }
@@ -33,59 +32,49 @@ export function createOpenSkySource({
   return {
     label: 'OpenSky Network',
     async getSnapshot(query = {}, { signal } = {}) {
-      // Türkiye hava sahası odaklı sınır koordinatları (veri boyutunu ~5MB'den 50KB'ye indirir)
-      let lamin = 35.0;
-      let lamax = 43.0;
-      let lomin = 25.0;
-      let lomax = 45.0;
-
-      if (Number.isFinite(query.latitude) && Number.isFinite(query.longitude)) {
-        const deltaLat = 3.5;
-        const deltaLon = 5.0;
-        lamin = Math.max(-90, query.latitude - deltaLat);
-        lamax = Math.min(90, query.latitude + deltaLat);
-        lomin = Math.max(-180, query.longitude - deltaLon);
-        lomax = Math.min(180, query.longitude + deltaLon);
-      }
-
-      const params = new URLSearchParams({
-        lamin: lamin.toFixed(4),
-        lamax: lamax.toFixed(4),
-        lomin: lomin.toFixed(4),
-        lomax: lomax.toFixed(4),
-      });
-
-      const targetUrl = `https://opensky-network.org/api/states/all?${params.toString()}`;
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+      // Türkiye merkezli (Ankara çevresi 400 km yarıçap) doğrudan açık ve CORS serbest ADS-B akışı
+      const lat = Number.isFinite(query.latitude) ? query.latitude : 39.92;
+      const lon = Number.isFinite(query.longitude) ? query.longitude : 32.85;
+      const targetUrl = `https://opendata.adsb.fi/api/v2/lat/${lat.toFixed(4)}/lon/${lon.toFixed(4)}/dist/400`;
 
       const { response, payload } = await readResponse(
         fetchImpl,
-        proxyUrl,
+        targetUrl,
         { signal },
-        'OpenSky',
+        'Canlı Uçuşlar',
       );
-      if (!response.ok) throw openSkyError(response);
+      if (!response.ok) throw flightError(response, 'Canlı Uçuşlar');
+
+      const age = finite(header(response, 'x-ads-b-cache-age-ms'));
       return {
-        ...openSkySnapshot(payload, {
-          source: 'OpenSky Network',
-          coverage: 'regional bounding snapshot',
+        ...readsbSnapshot(payload, {
+          source: 'Canlı Uçuşlar (adsb.fi)',
+          coverage: 'regional live snapshot',
+          observedAtMs: now() - (age != null && age > 0 ? age : 0),
           now: now(),
+          stale: false,
         }),
         status: response.status,
       };
     },
     async getTrack(reference, { signal } = {}) {
-      const targetUrl = `https://opensky-network.org/api/tracks/all?icao24=${reference}`;
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+      const targetUrl = `https://opendata.adsb.fi/api/v2/hex/${encodeURIComponent(reference)}`;
       const { response, payload } = await readResponse(
         fetchImpl,
-        proxyUrl,
+        targetUrl,
         { signal },
-        'OpenSky',
+        'Canlı Uçuşlar',
       );
-      if (!response.ok) throw httpError(response, 'OpenSky');
+      if (!response.ok) throw httpError(response, 'Canlı Uçuşlar');
+      const baseTimeMs = epoch(payload?.timestamp, 1000);
       return {
-        records: normalizeAircraftTrack(payload?.path),
+        records:
+          baseTimeMs == null
+            ? []
+            : normalizeAircraftTrack(payload?.trace, {
+                baseTimeMs,
+                readsb: true,
+              }),
         complete: false,
       };
     },
@@ -113,21 +102,21 @@ export function createAdsbLolSource({
     async getIdentities(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://api.adsb.lol/v2/mil',
+        'https://opendata.adsb.fi/api/v2/mil',
         { signal },
-        'adsb.lol',
+        'Askeri Uçuşlar',
       );
-      if (!response.ok) throw httpError(response, 'adsb.lol');
+      if (!response.ok) throw httpError(response, 'Askeri Uçuşlar');
       return readsbIdentities(payload);
     },
     async getSnapshot(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://api.adsb.lol/v2/mil',
+        'https://opendata.adsb.fi/api/v2/mil',
         { signal },
-        'adsb.lol',
+        'Askeri Uçuşlar',
       );
-      if (!response.ok) throw httpError(response, 'adsb.lol');
+      if (!response.ok) throw httpError(response, 'Askeri Uçuşlar');
       const age = finite(header(response, 'x-ads-b-cache-age-ms'));
       return {
         ...readsbSnapshot(payload, {
@@ -141,11 +130,11 @@ export function createAdsbLolSource({
     async getTrack(reference, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        `https://api.adsb.lol/v2/point/trace/${encodeURIComponent(reference)}`,
+        `https://opendata.adsb.fi/api/v2/hex/${encodeURIComponent(reference)}`,
         { signal },
-        'adsb.lol',
+        'Askeri Uçuşlar',
       );
-      if (!response.ok) throw httpError(response, 'adsb.lol');
+      if (!response.ok) throw httpError(response, 'Askeri Uçuşlar');
       const baseTimeMs = epoch(payload?.timestamp, 1000);
       return {
         records:
