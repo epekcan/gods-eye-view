@@ -42,7 +42,7 @@ export function createOpenSkySource({
 
       let normalizedPayload = payload;
 
-      // OpenSky Network formatı (states dizisi) geldiyse readsb/adsb formatına uyarla
+      // 1. OpenSky formatı (states dizisi)
       if (payload && Array.isArray(payload.states)) {
         const acList = payload.states
           .map((st) => ({
@@ -50,10 +50,10 @@ export function createOpenSkySource({
             flight: String(st[1] || '').trim(),
             lat: st[6],
             lon: st[5],
-            alt_baro: Number.isFinite(st[7]) ? Math.round(st[7] * 3.28084) : 0, // metre -> feet
+            alt_baro: Number.isFinite(st[7]) ? Math.round(st[7] * 3.28084) : 0,
             alt_geom: Number.isFinite(st[13]) ? Math.round(st[13] * 3.28084) : undefined,
             track: Number.isFinite(st[10]) ? st[10] : 0,
-            gs: Number.isFinite(st[9]) ? Math.round(st[9] * 1.94384) : 0, // m/s -> knot
+            gs: Number.isFinite(st[9]) ? Math.round(st[9] * 1.94384) : 0,
             seen: Number.isFinite(st[4]) ? Math.max(0, Math.round(Date.now() / 1000 - st[4])) : 0,
             category: 'A0',
           }))
@@ -63,6 +63,29 @@ export function createOpenSkySource({
           ac: acList,
           total: acList.length,
           now: payload.time ? payload.time * 1000 : now(),
+        };
+      } 
+      // 2. adsb.fi / readsb formatı (aircraft veya ac dizisi)
+      else if (payload && (Array.isArray(payload.aircraft) || Array.isArray(payload.ac) || Array.isArray(payload))) {
+        const rawList = payload.aircraft || payload.ac || payload;
+        const acList = rawList
+          .map((st) => ({
+            hex: String(st.hex || '').trim().toLowerCase(),
+            flight: String(st.flight || st.callsign || st.r || '').trim(),
+            lat: st.lat,
+            lon: st.lon,
+            alt_baro: st.alt_baro === 'ground' ? 0 : (Number(st.alt_baro) || Number(st.alt_geom) || 0),
+            track: Number(st.track || st.mag_heading || st.true_heading || 0),
+            gs: Number(st.gs || st.tas || 0),
+            seen: Number(st.seen || 0),
+            category: st.category || 'A0',
+          }))
+          .filter((ac) => ac.lat != null && ac.lon != null && ac.hex);
+
+        normalizedPayload = {
+          ac: acList,
+          total: acList.length,
+          now: payload?.now ? payload.now * 1000 : now(),
         };
       }
 

@@ -6,7 +6,7 @@
     },
     {
       "source": "/api/proxy/adsb-live",
-      "destination": "https://opendata.adsb.fi/api/v2/mil"
+      "destination": "https://opensky-network.org/api/states/all?lamin=35.5&lomin=25.5&lamax=42.5&lomax=45.0"
     },
     {
       "source": "/api/proxy/adsb-hex/:hex",
