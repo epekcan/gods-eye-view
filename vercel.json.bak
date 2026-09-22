@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/api/proxy/adsb-mil",
+      "destination": "https://opendata.adsb.fi/api/v2/mil"
+    },
+    {
+      "source": "/api/proxy/adsb-live",
+      "destination": "https://opendata.adsb.fi/api/v2/mil"
+    },
+    {
+      "source": "/api/proxy/adsb-hex/:hex",
+      "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
+    },
+    {
       "source": "/api/proxy/celestrak/:path*",
       "destination": "https://celestrak.org/:path*"
     },
