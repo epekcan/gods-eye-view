@@ -30,7 +30,7 @@ export function createApplicationViewer({ container, creditContainer, enableFlyI
     msaaSamples: 4,
     contextOptions: { 
       webgl: { 
-        preserveDrawingBuffer: true // Retained for canvas capture/export
+        preserveDrawingBuffer: true
       } 
     },
   });
@@ -40,13 +40,15 @@ export function createApplicationViewer({ container, creditContainer, enableFlyI
 
     // Atmospheric styling & globe configuration
     const { scene } = viewer;
-    scene.globe.show = false; // Intended for standalone 3D Tilesets
+    scene.globe.show = true; // Yerküre ve arazi katmanları aktif
+    scene.globe.depthTestAgainstTerrain = false; // İkonların arazinin arkasında kaybolmasını önler
     scene.skyAtmosphere.show = true;
     scene.skyAtmosphere.atmosphereLightIntensity = 18.0;
     scene.skyAtmosphere.saturationShift = -0.12;
     scene.skyAtmosphere.brightnessShift = -0.08;
 
-    const targetDestination = Cesium.Cartesian3.fromDegrees(32.8597, 39.9334, 1800000.0);
+    // Türkiye'yi tam vizöre alan ve uçakları net gösteren odak noktası
+    const targetDestination = Cesium.Cartesian3.fromDegrees(35.2433, 39.0000, 850000.0);
     const targetOrientation = {
       heading: Cesium.Math.toRadians(0.0),
       pitch: Cesium.Math.toRadians(-89.0),

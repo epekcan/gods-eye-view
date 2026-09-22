@@ -38,17 +38,21 @@ export function createApplicationViewer({ container, creditContainer, enableFlyI
   try {
     viewer.targetFrameRate = 60;
 
-    // Atmospheric styling & globe configuration
     const { scene } = viewer;
-    scene.globe.show = true; // Yerküre ve arazi katmanları aktif
-    scene.globe.depthTestAgainstTerrain = false; // İkonların arazinin arkasında kaybolmasını önler
+
+    // Yerküre ve arazi derinlik testlerini devre dışı bırakır;
+    // uçak ikonlarının arazinin/3D modellerin altına gömülmesini engeller
+    scene.globe.show = true;
+    scene.globe.depthTestAgainstTerrain = false;
+
+    // Atmosfer ve ışıklandırma
     scene.skyAtmosphere.show = true;
     scene.skyAtmosphere.atmosphereLightIntensity = 18.0;
     scene.skyAtmosphere.saturationShift = -0.12;
     scene.skyAtmosphere.brightnessShift = -0.08;
 
-    // Türkiye'yi tam vizöre alan ve uçakları net gösteren odak noktası
-    const targetDestination = Cesium.Cartesian3.fromDegrees(35.2433, 39.0000, 850000.0);
+    // Türkiye odaklı kuşbakışı başlangıç açısı
+    const targetDestination = Cesium.Cartesian3.fromDegrees(35.2433, 39.0000, 1100000.0);
     const targetOrientation = {
       heading: Cesium.Math.toRadians(0.0),
       pitch: Cesium.Math.toRadians(-89.0),

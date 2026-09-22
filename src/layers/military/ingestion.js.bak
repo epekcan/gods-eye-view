@@ -367,7 +367,7 @@ export function createIngestion({
               // Grounded/near-surface planes sit at/below the photoreal tile
               // surface — render them depth-test-free so they never vanish up
               // close (_groundDepthDistance).
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              disableDepthTestDistance: parts.rendering._groundDepthDistance(),
               id: icao24,
               show: !isTracked, // hidden if currently tracked (entity replaces it)
             });
