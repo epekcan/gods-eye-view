@@ -1,57 +1,58 @@
 import * as Cesium from 'cesium';
 
 /**
- * MTA Diri Fay Hatları Katmanı
- * Vercel Proxy tüneli üzerinden MTA WMS servisini render eder.
+ * Türkiye Diri Fay Hatları Katmanı
+ * Araziye tam kenetli (clampToGround) vektörel veri olarak render eder.
  */
 export function createMtaFaultsLayer() {
   let _viewer = null;
-  let _imageryLayer = null;
+  let _dataSource = null;
   let _enabled = false;
 
   return {
     id: 'mta-faults',
     name: 'Diri Fay Hatları',
     icon: '⚡',
-    source: 'MTA Yerbilimleri',
+    source: 'MTA / Açık Jeoloji',
     showInTogglePanel: true,
     updateInterval: 0,
 
     async init(viewer) {
       _viewer = viewer;
 
-      // Vercel proxy uç noktası üzerinden WMS sağlayıcısı
-      const provider = new Cesium.WebMapServiceImageryProvider({
-        url: '/api/proxy/mta-wms',
-        layers: 'mta:DRYGEO2',
-        parameters: {
-          transparent: 'true',
-          format: 'image/png',
-          version: '1.1.1',
-          srs: 'EPSG:4326',
-        },
-      });
+      try {
+        // Kararlı ve hızlı açık fay çizgileri verisi
+        _dataSource = await Cesium.GeoJsonDataSource.load(
+          'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json',
+          {
+            clampToGround: true, // Dağların ve vadilerin zeminine tam oturtur
+            stroke: Cesium.Color.RED.withAlpha(0.85),
+            strokeWidth: 2.5,
+          }
+        );
 
-      _imageryLayer = viewer.imageryLayers.addImageryProvider(provider);
-      _imageryLayer.show = false;
-      _imageryLayer.alpha = 1.0;
-      viewer.imageryLayers.raiseToTop(_imageryLayer);
+        _dataSource.show = false;
+        await viewer.dataSources.add(_dataSource);
+      } catch (err) {
+        console.warn('Fay hatları yüklenemedi:', err);
+      }
 
       return true;
     },
 
     async enable(viewer) {
       _enabled = true;
-      if (_imageryLayer) {
-        _imageryLayer.show = true;
-        viewer.imageryLayers.raiseToTop(_imageryLayer);
+      if (_dataSource) {
+        _dataSource.show = true;
       }
       return true;
     },
 
     async disable(viewer) {
       _enabled = false;
-      if (_imageryLayer) _imageryLayer.show = false;
+      if (_dataSource) {
+        _dataSource.show = false;
+      }
       return true;
     },
 
@@ -61,9 +62,9 @@ export function createMtaFaultsLayer() {
 
     async destroy(viewer = _viewer) {
       _enabled = false;
-      if (_imageryLayer && viewer) {
-        viewer.imageryLayers.remove(_imageryLayer, true);
-        _imageryLayer = null;
+      if (_dataSource && viewer) {
+        viewer.dataSources.remove(_dataSource, true);
+        _dataSource = null;
       }
       _viewer = null;
       return true;
@@ -71,10 +72,10 @@ export function createMtaFaultsLayer() {
 
     getStats() {
       return {
-        count: null,
+        count: _dataSource ? _dataSource.entities.values.length : null,
         countLabel: 'AKTİF',
         status: _enabled ? 'nominal' : 'offline',
-        source: 'MTA Yerbilimleri',
+        source: 'Açık Jeoloji',
         lastUpdate: _enabled ? Date.now() : null,
       };
     },

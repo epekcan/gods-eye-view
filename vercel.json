@@ -13,10 +13,6 @@
       "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
     },
     {
-      "source": "/api/proxy/mta-wms",
-      "destination": "https://yerbilimleri.mta.gov.tr/geoserver/mta/wms"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
