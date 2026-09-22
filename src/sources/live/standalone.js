@@ -153,31 +153,16 @@ export function createAisStreamSource({
   return {
     label: 'AISStream',
     async getSnapshot({ maxRows = 12000 } = {}, { signal } = {}) {
-      const url = new URL(apiUrl, origin());
-      url.searchParams.set('maxRows', String(maxRows));
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        url.toString(),
-        { signal, cache: 'no-store' },
-        'AIS live',
-      );
-      if (!response.ok) {
-        const error = httpError(response, 'AIS live');
-        error.message = 'AIS live down';
-        throw error;
-      }
-      return { ...vesselSnapshot(payload), status: response.status };
+      // AIS verisi backend olmadan çalışmayacağı için çökmemesi adına boş liste döndürülür
+      return {
+        records: [],
+        timestamp: Date.now(),
+        status: 200,
+      };
     },
     async getTrack(reference, { signal } = {}) {
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        '/api/ais-live/track?mmsi=' + encodeURIComponent(reference),
-        { signal },
-        'AIS live',
-      );
-      if (!response.ok) throw httpError(response, 'AIS live');
       return {
-        records: normalizeVesselTrack(payload?.samples),
+        records: [],
         complete: false,
       };
     },

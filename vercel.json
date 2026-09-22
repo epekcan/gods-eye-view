@@ -6,11 +6,19 @@
     },
     {
       "source": "/api/proxy/adsb-live",
-      "destination": "https://opendata.adsb.fi/api/v2/lat/39.0000/lon/35.0000/dist/1000"
+      "destination": "https://opendata.adsb.fi/api/v2/lat/39/lon/35/dist/250"
     },
     {
       "source": "/api/proxy/adsb-hex/:hex",
       "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
+    },
+    {
+      "source": "/api/proxy/celestrak/:path*",
+      "destination": "https://celestrak.org/:path*"
+    },
+    {
+      "source": "/api/proxy/launchlibrary/:path*",
+      "destination": "https://ll.thespacedevs.com/:path*"
     },
     {
       "source": "/(.*)",

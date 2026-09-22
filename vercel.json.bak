@@ -5,12 +5,16 @@
       "destination": "https://opendata.adsb.fi/api/v2/mil"
     },
     {
-      "source": "/api/proxy/adsb-all",
-      "destination": "https://opendata.adsb.fi/api/v2/all"
+      "source": "/api/proxy/adsb-live",
+      "destination": "https://opendata.adsb.fi/api/v2/lat/39/lon/35/dist/250"
     },
     {
       "source": "/api/proxy/adsb-hex/:hex",
       "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
+    },
+    {
+      "source": "/api/proxy/celestrak/:path*",
+      "destination": "https://celestrak.org/:path*"
     },
     {
       "source": "/(.*)",
