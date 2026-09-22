@@ -17,6 +17,10 @@
       "destination": "https://celestrak.org/:path*"
     },
     {
+      "source": "/api/proxy/launchlibrary/:path*",
+      "destination": "https://ll.thespacedevs.com/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

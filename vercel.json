@@ -2,15 +2,15 @@
   "rewrites": [
     {
       "source": "/api/proxy/adsb-mil",
-      "destination": "https://opendata.adsb.fi/api/v2/mil"
+      "destination": "https://api.airplanes.live/v2/mil"
     },
     {
       "source": "/api/proxy/adsb-live",
-      "destination": "https://opendata.adsb.fi/api/v2/lat/39/lon/35/dist/250"
+      "destination": "https://api.airplanes.live/v2/point/39/35/250"
     },
     {
       "source": "/api/proxy/adsb-hex/:hex",
-      "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
+      "destination": "https://api.airplanes.live/v2/hex/:hex"
     },
     {
       "source": "/api/proxy/celestrak/:path*",
