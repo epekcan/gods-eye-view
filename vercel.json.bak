@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/proxy/adsb-mil",
+      "destination": "https://opendata.adsb.fi/api/v2/mil"
+    },
+    {
+      "source": "/api/proxy/adsb-all",
+      "destination": "https://opendata.adsb.fi/api/v2/lat/39.92/lon/32.85/dist/400"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

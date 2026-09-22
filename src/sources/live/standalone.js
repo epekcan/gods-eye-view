@@ -30,12 +30,13 @@ export function createOpenSkySource({
   now = () => Date.now(),
 } = {}) {
   return {
-    label: 'OpenSky Network',
+    label: 'Canlı Uçuşlar',
     async getSnapshot(query = {}, { signal } = {}) {
-      // Türkiye merkezli (Ankara çevresi 400 km yarıçap) doğrudan açık ve CORS serbest ADS-B akışı
       const lat = Number.isFinite(query.latitude) ? query.latitude : 39.92;
       const lon = Number.isFinite(query.longitude) ? query.longitude : 32.85;
-      const targetUrl = `https://opendata.adsb.fi/api/v2/lat/${lat.toFixed(4)}/lon/${lon.toFixed(4)}/dist/400`;
+
+      // Vercel iç sunucu proxy rotası
+      const targetUrl = `/api/proxy/adsb-live/lat/${lat.toFixed(4)}/lon/${lon.toFixed(4)}/dist/250`;
 
       const { response, payload } = await readResponse(
         fetchImpl,
@@ -48,7 +49,7 @@ export function createOpenSkySource({
       const age = finite(header(response, 'x-ads-b-cache-age-ms'));
       return {
         ...readsbSnapshot(payload, {
-          source: 'Canlı Uçuşlar (adsb.fi)',
+          source: 'Canlı Uçuşlar',
           coverage: 'regional live snapshot',
           observedAtMs: now() - (age != null && age > 0 ? age : 0),
           now: now(),
@@ -58,7 +59,7 @@ export function createOpenSkySource({
       };
     },
     async getTrack(reference, { signal } = {}) {
-      const targetUrl = `https://opendata.adsb.fi/api/v2/hex/${encodeURIComponent(reference)}`;
+      const targetUrl = `/api/proxy/adsb-live/hex/${encodeURIComponent(reference)}`;
       const { response, payload } = await readResponse(
         fetchImpl,
         targetUrl,
@@ -98,11 +99,11 @@ export function createAdsbLolSource({
   now = () => Date.now(),
 } = {}) {
   return {
-    label: 'adsb.lol',
+    label: 'Askeri Uçuşlar',
     async getIdentities(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://opendata.adsb.fi/api/v2/mil',
+        '/api/proxy/adsb-mil',
         { signal },
         'Askeri Uçuşlar',
       );
@@ -112,7 +113,7 @@ export function createAdsbLolSource({
     async getSnapshot(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        'https://opendata.adsb.fi/api/v2/mil',
+        '/api/proxy/adsb-mil',
         { signal },
         'Askeri Uçuşlar',
       );
@@ -130,7 +131,7 @@ export function createAdsbLolSource({
     async getTrack(reference, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        `https://opendata.adsb.fi/api/v2/hex/${encodeURIComponent(reference)}`,
+        `/api/proxy/adsb-live/hex/${encodeURIComponent(reference)}`,
         { signal },
         'Askeri Uçuşlar',
       );
