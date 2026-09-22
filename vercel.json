@@ -5,8 +5,8 @@
       "destination": "https://opendata.adsb.fi/api/v2/mil"
     },
     {
-      "source": "/api/proxy/adsb-all",
-      "destination": "https://opendata.adsb.fi/api/v2/all"
+      "source": "/api/proxy/adsb-live",
+      "destination": "https://opendata.adsb.fi/api/v2/lat/39.0000/lon/35.0000/dist/1000"
     },
     {
       "source": "/api/proxy/adsb-hex/:hex",

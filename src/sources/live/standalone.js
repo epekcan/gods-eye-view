@@ -32,10 +32,9 @@ export function createOpenSkySource({
   return {
     label: 'Canlı Uçuşlar',
     async getSnapshot(_query = {}, { signal } = {}) {
-      // Bölgesel kısıtlama kaldırıldı; dünya geneli tüm uçuş akışı
       const { response, payload } = await readResponse(
         fetchImpl,
-        '/api/proxy/adsb-all',
+        '/api/proxy/adsb-live',
         { signal },
         'Canlı Uçuşlar',
       );
@@ -45,7 +44,7 @@ export function createOpenSkySource({
       return {
         ...readsbSnapshot(payload, {
           source: 'Canlı Uçuşlar',
-          coverage: 'global live snapshot',
+          coverage: 'regional live snapshot',
           observedAtMs: now() - (age != null && age > 0 ? age : 0),
           now: now(),
           stale: false,
