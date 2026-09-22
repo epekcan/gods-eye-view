@@ -97,17 +97,16 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
               id: `earthquake:${stableId}`,
               position,
               point: {
-                pixelSize: Math.max(8, Math.min(20, mag * 2.8)),
-                color: color.withAlpha(0.9),
-                outlineColor: Cesium.Color.WHITE.withAlpha(0.85),
-                outlineWidth: 1.5,
+                pixelSize: Math.max(8, Math.min(22, mag * 3.0)),
+                color: color.withAlpha(0.95),
+                outlineColor: Cesium.Color.WHITE.withAlpha(0.9),
+                outlineWidth: 2,
                 heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                // Havada asılı kalma hissini ve derinlik çatışmasını önleyen mesafe sınırı:
-                disableDepthTestDistance: 500000, 
+                disableDepthTestDistance: Number.POSITIVE_INFINITY, // Her yükseklikte arazinin üstünde net görünür
               },
               ellipse: {
-                semiMajorAxis: Math.max(baseRadius, 10000),
-                semiMinorAxis: Math.max(baseRadius, 10000),
+                semiMajorAxis: Math.max(baseRadius, 15000),
+                semiMinorAxis: Math.max(baseRadius, 15000),
                 material: new Cesium.ColorMaterialProperty(
                   color.withAlpha(fillAlpha),
                 ),
@@ -115,7 +114,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
                 outlineColor: color.withAlpha(outlineAlpha),
                 outlineWidth: isSignificant ? 2.5 : 1.5,
                 heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                classificationType: Cesium.ClassificationType.TERRAIN, // Elipsi doğrudan arazi kabartmasına giydirir
+                classificationType: Cesium.ClassificationType.BOTH, // Hem arazi kabartmasına hem 3D modellere doğrudan kaplar
               },
               properties: {
                 usgsId,

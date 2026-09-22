@@ -31,16 +31,11 @@ export function createOpenSkySource({
 } = {}) {
   return {
     label: 'Canlı Uçuşlar',
-    async getSnapshot(query = {}, { signal } = {}) {
-      const lat = Number.isFinite(query.latitude) ? query.latitude : 39.92;
-      const lon = Number.isFinite(query.longitude) ? query.longitude : 32.85;
-
-      // Vercel iç sunucu proxy rotası
-      const targetUrl = `/api/proxy/adsb-live/lat/${lat.toFixed(4)}/lon/${lon.toFixed(4)}/dist/250`;
-
+    async getSnapshot(_query = {}, { signal } = {}) {
+      // Bölgesel kısıtlama kaldırıldı; dünya geneli tüm uçuş akışı
       const { response, payload } = await readResponse(
         fetchImpl,
-        targetUrl,
+        '/api/proxy/adsb-all',
         { signal },
         'Canlı Uçuşlar',
       );
@@ -50,7 +45,7 @@ export function createOpenSkySource({
       return {
         ...readsbSnapshot(payload, {
           source: 'Canlı Uçuşlar',
-          coverage: 'regional live snapshot',
+          coverage: 'global live snapshot',
           observedAtMs: now() - (age != null && age > 0 ? age : 0),
           now: now(),
           stale: false,
@@ -59,7 +54,7 @@ export function createOpenSkySource({
       };
     },
     async getTrack(reference, { signal } = {}) {
-      const targetUrl = `/api/proxy/adsb-live/hex/${encodeURIComponent(reference)}`;
+      const targetUrl = `/api/proxy/adsb-hex/${encodeURIComponent(reference)}`;
       const { response, payload } = await readResponse(
         fetchImpl,
         targetUrl,
@@ -131,7 +126,7 @@ export function createAdsbLolSource({
     async getTrack(reference, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        `/api/proxy/adsb-live/hex/${encodeURIComponent(reference)}`,
+        `/api/proxy/adsb-hex/${encodeURIComponent(reference)}`,
         { signal },
         'Askeri Uçuşlar',
       );

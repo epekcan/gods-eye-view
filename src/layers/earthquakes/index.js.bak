@@ -97,23 +97,25 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
               id: `earthquake:${stableId}`,
               position,
               point: {
-                pixelSize: Math.max(8, Math.min(24, mag * 3.2)),
-                color: color.withAlpha(0.95),
-                outlineColor: Cesium.Color.WHITE,
-                outlineWidth: 2,
+                pixelSize: Math.max(8, Math.min(20, mag * 2.8)),
+                color: color.withAlpha(0.9),
+                outlineColor: Cesium.Color.WHITE.withAlpha(0.85),
+                outlineWidth: 1.5,
                 heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                // Havada asılı kalma hissini ve derinlik çatışmasını önleyen mesafe sınırı:
+                disableDepthTestDistance: 500000, 
               },
               ellipse: {
-                semiMajorAxis: Math.max(baseRadius, 25000),
-                semiMinorAxis: Math.max(baseRadius, 25000),
+                semiMajorAxis: Math.max(baseRadius, 10000),
+                semiMinorAxis: Math.max(baseRadius, 10000),
                 material: new Cesium.ColorMaterialProperty(
                   color.withAlpha(fillAlpha),
                 ),
                 outline: true,
                 outlineColor: color.withAlpha(outlineAlpha),
-                outlineWidth: isSignificant ? 3 : 2,
+                outlineWidth: isSignificant ? 2.5 : 1.5,
                 heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                classificationType: Cesium.ClassificationType.TERRAIN, // Elipsi doğrudan arazi kabartmasına giydirir
               },
               properties: {
                 usgsId,

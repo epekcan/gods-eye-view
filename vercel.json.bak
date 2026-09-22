@@ -6,7 +6,15 @@
     },
     {
       "source": "/api/proxy/adsb-all",
-      "destination": "https://opendata.adsb.fi/api/v2/lat/39.92/lon/32.85/dist/400"
+      "destination": "https://opendata.adsb.fi/api/v2/all"
+    },
+    {
+      "source": "/api/proxy/adsb-hex/:hex",
+      "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
+    },
+    {
+      "source": "/api/proxy/mta-wms",
+      "destination": "https://yerbilimleri.mta.gov.tr/geoserver/mta/wms"
     },
     {
       "source": "/(.*)",

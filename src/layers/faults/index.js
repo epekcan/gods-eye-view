@@ -2,7 +2,7 @@ import * as Cesium from 'cesium';
 
 /**
  * MTA Diri Fay Hatları Katmanı
- * MTA Yerbilimleri Harita Görüntüleyici WMS servisi üzerinden doğrudan render eder.
+ * Vercel Proxy tüneli üzerinden MTA WMS servisini render eder.
  */
 export function createMtaFaultsLayer() {
   let _viewer = null;
@@ -20,9 +20,9 @@ export function createMtaFaultsLayer() {
     async init(viewer) {
       _viewer = viewer;
 
-      // Doğrudan genel WMS uç noktasına bağlanır
+      // Vercel proxy uç noktası üzerinden WMS sağlayıcısı
       const provider = new Cesium.WebMapServiceImageryProvider({
-        url: 'https://yerbilimleri.mta.gov.tr/geoserver/mta/wms',
+        url: '/api/proxy/mta-wms',
         layers: 'mta:DRYGEO2',
         parameters: {
           transparent: 'true',
