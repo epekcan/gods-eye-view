@@ -33,17 +33,29 @@ export function createOpenSkySource({
   return {
     label: 'OpenSky Network',
     async getSnapshot(query = {}, { signal } = {}) {
-      const params = new URLSearchParams();
+      // Türkiye hava sahası odaklı sınır koordinatları (veri boyutunu ~5MB'den 50KB'ye indirir)
+      let lamin = 35.0;
+      let lamax = 43.0;
+      let lomin = 25.0;
+      let lomax = 45.0;
+
       if (Number.isFinite(query.latitude) && Number.isFinite(query.longitude)) {
-        const delta = 3.0;
-        params.set('lamin', (query.latitude - delta).toFixed(4));
-        params.set('lomin', (query.longitude - delta).toFixed(4));
-        params.set('lamax', (query.latitude + delta).toFixed(4));
-        params.set('lomax', (query.longitude + delta).toFixed(4));
+        const deltaLat = 3.5;
+        const deltaLon = 5.0;
+        lamin = Math.max(-90, query.latitude - deltaLat);
+        lamax = Math.min(90, query.latitude + deltaLat);
+        lomin = Math.max(-180, query.longitude - deltaLon);
+        lomax = Math.min(180, query.longitude + deltaLon);
       }
-      
-      // Güvenilir hızlı CORS tüneli
-      const targetUrl = `https://opensky-network.org/api/states/all${params.size ? '?' + params : ''}`;
+
+      const params = new URLSearchParams({
+        lamin: lamin.toFixed(4),
+        lamax: lamax.toFixed(4),
+        lomin: lomin.toFixed(4),
+        lomax: lomax.toFixed(4),
+      });
+
+      const targetUrl = `https://opensky-network.org/api/states/all?${params.toString()}`;
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
       const { response, payload } = await readResponse(
@@ -56,7 +68,7 @@ export function createOpenSkySource({
       return {
         ...openSkySnapshot(payload, {
           source: 'OpenSky Network',
-          coverage: 'worldwide upstream snapshot',
+          coverage: 'regional bounding snapshot',
           now: now(),
         }),
         status: response.status,
@@ -99,7 +111,6 @@ export function createAdsbLolSource({
   return {
     label: 'adsb.lol',
     async getIdentities(_query = {}, { signal } = {}) {
-      // adsb.lol doğrudan tarayıcı CORS isteklerine açıktır
       const { response, payload } = await readResponse(
         fetchImpl,
         'https://api.adsb.lol/v2/mil',
