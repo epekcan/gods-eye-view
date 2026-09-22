@@ -1,184 +1,74 @@
-import {
-  epoch,
-  finite,
-  httpError,
-  LiveSourceError,
-  readResponse,
-} from './contract.js';
-import {
-  normalizeAircraftTrack,
-  readsbSnapshot,
-  readsbIdentities,
-} from './aircraft.js';
-import { normalizeVesselTrack, vesselSnapshot } from './vessels.js';
+import * as Cesium from 'cesium';
 
-const defaultFetch = (...args) => globalThis.fetch(...args);
-const header = (response, name) => response.headers?.get?.(name);
+export function createMtaFaultsLayer() {
+  let _viewer = null;
+  let _dataSource = null;
+  let _enabled = false;
 
-function flightError(response, provider) {
-  const error = httpError(response, provider);
-  if (response.status === 429) {
-    error.message = `${provider} hız sınırı (rate limit)`;
-  } else {
-    error.message = `${provider} HTTP ${response.status}`;
-  }
-  return error;
-}
-
-export function createOpenSkySource({
-  fetchImpl = defaultFetch,
-  now = () => Date.now(),
-} = {}) {
   return {
-    label: 'Canlı Uçuşlar',
-    async getSnapshot(_query = {}, { signal } = {}) {
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        '/api/proxy/adsb-live',
-        { signal },
-        'Canlı Uçuşlar',
-      );
-      if (!response.ok) throw flightError(response, 'Canlı Uçuşlar');
+    id: 'mta-faults',
+    name: 'Diri Fay Hatları',
+    icon: '⚡',
+    source: 'Açık Jeoloji',
+    showInTogglePanel: true,
+    updateInterval: 0,
 
-      const age = finite(header(response, 'x-ads-b-cache-age-ms'));
-      return {
-        ...readsbSnapshot(payload, {
-          source: 'Canlı Uçuşlar',
-          coverage: 'regional live snapshot',
-          observedAtMs: now() - (age != null && age > 0 ? age : 0),
-          now: now(),
-          stale: false,
-        }),
-        status: response.status,
-      };
-    },
-    async getTrack(reference, { signal } = {}) {
-      const targetUrl = `/api/proxy/adsb-hex/${encodeURIComponent(reference)}`;
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        targetUrl,
-        { signal },
-        'Canlı Uçuşlar',
-      );
-      if (!response.ok) throw httpError(response, 'Canlı Uçuşlar');
-      const baseTimeMs = epoch(payload?.timestamp, 1000);
-      return {
-        records:
-          baseTimeMs == null
-            ? []
-            : normalizeAircraftTrack(payload?.trace, {
-                baseTimeMs,
-                readsb: true,
-              }),
-        complete: false,
-      };
-    },
-    async getEnrichment(query, { signal } = {}) {
-      if (!['type', 'route'].includes(query.kind))
-        throw new LiveSourceError('unsupported', 'Enrichment unavailable');
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        `https://api.adsbdb.com/v0/${query.kind}/${encodeURIComponent(query.id)}`,
-        { signal },
-        'adsbdb',
-      );
-      if (!response.ok) throw httpError(response, 'adsbdb');
-      return payload;
-    },
-  };
-}
-
-export function createAdsbLolSource({
-  fetchImpl = defaultFetch,
-  now = () => Date.now(),
-} = {}) {
-  return {
-    label: 'Askeri Uçuşlar',
-    async getIdentities(_query = {}, { signal } = {}) {
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        '/api/proxy/adsb-mil',
-        { signal },
-        'Askeri Uçuşlar',
-      );
-      if (!response.ok) throw httpError(response, 'Askeri Uçuşlar');
-      return readsbIdentities(payload);
-    },
-    async getSnapshot(_query = {}, { signal } = {}) {
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        '/api/proxy/adsb-mil',
-        { signal },
-        'Askeri Uçuşlar',
-      );
-      if (!response.ok) throw httpError(response, 'Askeri Uçuşlar');
-      const age = finite(header(response, 'x-ads-b-cache-age-ms'));
-      return {
-        ...readsbSnapshot(payload, {
-          observedAtMs: now() - (age != null && age > 0 ? age : 0),
-          now: now(),
-          stale: false,
-        }),
-        status: response.status,
-      };
-    },
-    async getTrack(reference, { signal } = {}) {
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        `/api/proxy/adsb-hex/${encodeURIComponent(reference)}`,
-        { signal },
-        'Askeri Uçuşlar',
-      );
-      if (!response.ok) throw httpError(response, 'Askeri Uçuşlar');
-      const baseTimeMs = epoch(payload?.timestamp, 1000);
-      return {
-        records:
-          baseTimeMs == null
-            ? []
-            : normalizeAircraftTrack(payload?.trace, {
-                baseTimeMs,
-                readsb: true,
-              }),
-        complete: false,
-      };
-    },
-  };
-}
-
-export function createAisStreamSource({
-  fetchImpl = defaultFetch,
-  apiUrl = '/api/ais-live',
-  origin = () => globalThis.location?.origin || 'http://localhost',
-} = {}) {
-  return {
-    label: 'AISStream',
-    async getSnapshot({ maxRows = 12000 } = {}, { signal } = {}) {
-      const url = new URL(apiUrl, origin());
-      url.searchParams.set('maxRows', String(maxRows));
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        url.toString(),
-        { signal, cache: 'no-store' },
-        'AIS live',
-      );
-      if (!response.ok) {
-        const error = httpError(response, 'AIS live');
-        error.message = 'AIS live down';
-        throw error;
+    async init(viewer) {
+      _viewer = viewer;
+      try {
+        _dataSource = await Cesium.GeoJsonDataSource.load(
+          'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json',
+          {
+            clampToGround: true,
+            stroke: Cesium.Color.RED.withAlpha(0.85),
+            strokeWidth: 2.5,
+          }
+        );
+        _dataSource.show = false;
+        await viewer.dataSources.add(_dataSource);
+      } catch (err) {
+        console.warn('Fay hatları yüklenemedi:', err);
       }
-      return { ...vesselSnapshot(payload), status: response.status };
+      return true;
     },
-    async getTrack(reference, { signal } = {}) {
-      const { response, payload } = await readResponse(
-        fetchImpl,
-        '/api/ais-live/track?mmsi=' + encodeURIComponent(reference),
-        { signal },
-        'AIS live',
-      );
-      if (!response.ok) throw httpError(response, 'AIS live');
+
+    async enable(viewer) {
+      _enabled = true;
+      if (_dataSource) {
+        _dataSource.show = true;
+      }
+      return true;
+    },
+
+    async disable(viewer) {
+      _enabled = false;
+      if (_dataSource) {
+        _dataSource.show = false;
+      }
+      return true;
+    },
+
+    async update() {
+      return true;
+    },
+
+    async destroy(viewer = _viewer) {
+      _enabled = false;
+      if (_dataSource && viewer) {
+        viewer.dataSources.remove(_dataSource, true);
+        _dataSource = null;
+      }
+      _viewer = null;
+      return true;
+    },
+
+    getStats() {
       return {
-        records: normalizeVesselTrack(payload?.samples),
-        complete: false,
+        count: _dataSource ? _dataSource.entities.values.length : null,
+        countLabel: 'AKTİF',
+        status: _enabled ? 'nominal' : 'offline',
+        source: 'Açık Jeoloji',
+        lastUpdate: _enabled ? Date.now() : null,
       };
     },
   };
