@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/api/celestrak/:group",
+      "destination": "https://celestrak.org/NORAD/elements/gp.php?GROUP=:group&FORMAT=tle"
+    },
+    {
+      "source": "/api/proxy/celestrak/:path*",
+      "destination": "https://celestrak.org/:path*"
+    },
+    {
+      "source": "/api/proxy/launchlibrary/:path*",
+      "destination": "https://ll.thespacedevs.com/:path*"
+    },
+    {
+      "source": "/api/launchlibrary/:path*",
+      "destination": "https://ll.thespacedevs.com/:path*"
+    },
+    {
       "source": "/api/proxy/adsb-mil",
       "destination": "https://opendata.adsb.fi/api/v2/mil"
     },
@@ -11,14 +27,6 @@
     {
       "source": "/api/proxy/adsb-hex/:hex",
       "destination": "https://opendata.adsb.fi/api/v2/hex/:hex"
-    },
-    {
-      "source": "/api/proxy/celestrak/:path*",
-      "destination": "https://celestrak.org/:path*"
-    },
-    {
-      "source": "/api/proxy/launchlibrary/:path*",
-      "destination": "https://ll.thespacedevs.com/:path*"
     },
     {
       "source": "/(.*)",
