@@ -21,7 +21,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
   let _count = 0;
   let _lastError = null;
   let _records = [];
-  let _lastUpdatedMs = Date.now();
+  let _isActive = false;
 
   return {
     id: 'earthquakes',
@@ -37,15 +37,19 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
       console.log('[Data:Earthquakes] Initialized');
     },
 
-    show() {
+    async show() {
+      _isActive = true;
       if (_dataSource) _dataSource.show = true;
       overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, true);
     },
 
-    hide() {
+    async hide() {
+      _isActive = false;
       if (_dataSource) _dataSource.show = false;
-      overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
-      overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
+      try {
+        overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
+        overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
+      } catch (_) {}
     },
 
     async update({ signal } = {}) {
@@ -54,7 +58,6 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
         _records = rows;
         _count = rows.length;
         _lastError = null;
-        _lastUpdatedMs = Date.now();
 
         if (_dataSource) {
           _dataSource.entities.removeAll();
@@ -63,11 +66,11 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
           for (const [index, row] of rows.entries()) {
             const { stableId, lon, lat, depthKm, mag, place } = row;
             const groundPos = Cesium.Cartesian3.fromDegrees(lon, lat, 0);
-            const calloutHeight = Math.max(25000, (mag || 2.0) * 35000); // Büyüklüğe göre yükselen dikey hat
+            const calloutHeight = Math.max(25000, (mag || 2.0) * 35000);
             const elevatedPos = Cesium.Cartesian3.fromDegrees(lon, lat, calloutHeight);
             const color = depthColor(depthKm || 10);
 
-            // 1. Zemin Çemberi / Dalga Halkası
+            // 1. Zemin Çemberi / Darbe Halkası
             _dataSource.entities.add({
               id: `earthquake:${stableId}`,
               position: groundPos,
@@ -82,7 +85,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
               },
             });
 
-            // 2. Dikey Callout Çizgisi (Deprem derinlik/şiddet sütunu)
+            // 2. Dikey Callout Çizgisi
             _dataSource.entities.add({
               id: `earthquake-stem:${stableId}`,
               polyline: {
@@ -146,14 +149,19 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
       }
     },
 
-    destroy() {
+    async destroy() {
+      _isActive = false;
       if (_viewer && _dataSource) {
-        _viewer.dataSources.remove(_dataSource, true);
+        try {
+          _viewer.dataSources.remove(_dataSource, true);
+        } catch (_) {}
       }
       _dataSource = null;
       _viewer = null;
-      overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
-      overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
+      try {
+        overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
+        overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
+      } catch (_) {}
     },
 
     getRecords() {
@@ -161,12 +169,14 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
     },
 
     getStatus() {
+      const isOk = !_lastError;
       return {
-        status: _lastError ? 'error' : 'ready',
-        disposition: _lastError ? 'error' : 'ready',
+        status: isOk ? 'active' : 'error',
+        disposition: isOk ? 'active' : 'error',
+        state: isOk ? 'active' : 'error',
         count: _count,
         error: _lastError,
-        observedAtMs: _lastUpdatedMs,
+        ready: true,
         source: 'Kandilli / AFAD',
       };
     },
