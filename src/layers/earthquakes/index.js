@@ -28,7 +28,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
     id: 'earthquakes',
     name: 'Depremler',
     label: 'Depremler',
-    icon: 'earthquake',
+    icon: '🔴', // veya boş string: ''
     source: 'Kandilli / AFAD',
     showInTogglePanel: true,
     refreshInterval: 60000,
