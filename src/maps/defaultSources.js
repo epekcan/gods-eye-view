@@ -12,13 +12,13 @@ import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
 
 const HGM_API_KEY = 'rXKdDZxXgj2hgFspEC4BKG4HMittQ0Y6';
 
-/** HGM Hibrit Uydu: Esri Uydu + HGM Resmi Yol/Cadde Çizgileri */
+/** HGM Hibrit Uydu: Açık Kaynak OSM Tabanı + HGM Resmi Yol/Cadde Çizgileri */
 class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   constructor() {
     super({
-      url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       maximumLevel: 18,
-      credit: 'Esri World Imagery + Harita Genel Müdürlüğü (HGM) Yol Ağı',
+      credit: 'OpenStreetMap contributors + Harita Genel Müdürlüğü (HGM) Yol Ağı',
     });
 
     this._hgmPattern = `/hgm-servis/harita/yolorta_uydu/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`;
@@ -29,12 +29,12 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
     const tileRect = this.tilingScheme.tileXYToRectangle(x, y, level);
     const inTurkey = Cesium.Rectangle.intersection(tileRect, this._turkeyRect);
 
-    // Türkiye dışı veya düşük zoom ise standart Esri karesini al
+    // Türkiye dışı veya düşük zoom ise standart OSM karesini al
     if (!inTurkey || level < 6 || level > 18) {
       return super.requestImage(x, y, level);
     }
 
-    const esriUrl = `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${level}/${y}/${x}`;
+    const osmUrl = `https://tile.openstreetmap.org/${level}/${x}/${y}.png`;
     const hgmUrl = this._hgmPattern
       .replace('{z}', String(level))
       .replace('{x}', String(x))
@@ -49,7 +49,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
         img.src = url;
       });
 
-    return Promise.all([loadImg(esriUrl), loadImg(hgmUrl)]).then(([baseImg, hgmImg]) => {
+    return Promise.all([loadImg(osmUrl), loadImg(hgmUrl)]).then(([baseImg, hgmImg]) => {
       if (!baseImg) return undefined;
       if (!hgmImg) return baseImg;
 

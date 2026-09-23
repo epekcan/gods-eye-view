@@ -40,7 +40,6 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
       .replace('{x}', String(x))
       .replace('{y}', String(y));
 
-    // Cesium Request nesnesi yerine doğrudan Image yüklemesi yaparak scheduler'ı tamamen bypass ediyoruz
     const loadImg = (url) =>
       new Promise((resolve) => {
         const img = new Image();
@@ -67,12 +66,16 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   }
 }
 
+function createHgmUyduImagery() {
+  return new HgmHybridImageryProvider();
+}
+
 function createHgmFizikiImagery() {
   return new Cesium.UrlTemplateImageryProvider({
     url: `/hgm-servis/hgmrasterhrt//fiziki/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`,
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2),
-    minimumLevel: 5, // Küresel seviyelerde istek atılmasını engeller
+    minimumLevel: 5,
     maximumLevel: 18,
     credit: 'Harita Genel Müdürlüğü (HGM) Fiziki',
   });
@@ -84,7 +87,7 @@ function createIbbImagery() {
     url: '/ibb-ortofoto/cbsc2/UYDU/Layers/_alllayers/L{arcLevel}/R{arcRow}/C{arcCol}.jpg',
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(27.8, 40.7, 29.9, 41.6),
-    minimumLevel: 10, // İBB İstanbul ortofotosu sadece yerel İstanbul zoomunda geçerlidir
+    minimumLevel: 10,
     maximumLevel: 19,
     credit: 'İBB İstanbul Ortofoto',
   });
