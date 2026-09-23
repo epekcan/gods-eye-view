@@ -21,43 +21,67 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
   let _count = 0;
   let _lastError = null;
   let _records = [];
-  let _isActive = false;
+  let _lastUpdate = null;
+  let _enabled = false;
 
   return {
     id: 'earthquakes',
+    name: 'Depremler',
     label: 'Depremler',
+    icon: 'earthquake',
+    source: 'Kandilli / AFAD',
+    showInTogglePanel: true,
+    refreshInterval: 60000,
 
     async init(viewer) {
-      if (_viewer) throw new Error('Earthquake layer is already initialized');
       _viewer = viewer;
-      _dataSource = new Cesium.CustomDataSource('earthquakes');
-      await viewer.dataSources.add(_dataSource);
+      if (!_dataSource) {
+        _dataSource = new Cesium.CustomDataSource('earthquakes');
+        await viewer.dataSources.add(_dataSource);
+      }
       _dataSource.show = false;
-      overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
+      try {
+        overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
+      } catch (_) {}
       console.log('[Data:Earthquakes] Initialized');
+      return true;
     },
 
-    async show() {
-      _isActive = true;
+    async enable(viewer) {
+      _enabled = true;
+      if (viewer && !_viewer) _viewer = viewer;
       if (_dataSource) _dataSource.show = true;
-      overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, true);
+      try {
+        overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, true);
+      } catch (_) {}
+      return true;
     },
 
-    async hide() {
-      _isActive = false;
+    async disable(viewer) {
+      _enabled = false;
       if (_dataSource) _dataSource.show = false;
       try {
         overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
         overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
       } catch (_) {}
+      return true;
     },
 
-    async update({ signal } = {}) {
+    show() {
+      return this.enable(_viewer);
+    },
+
+    hide() {
+      return this.disable(_viewer);
+    },
+
+    async update(viewer, { signal } = {}) {
       try {
         const rows = await source.getSnapshot({ signal });
         _records = rows;
         _count = rows.length;
         _lastError = null;
+        _lastUpdate = new Date().toISOString();
 
         if (_dataSource) {
           _dataSource.entities.removeAll();
@@ -143,14 +167,37 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
         }
 
         console.log(`[Data:Earthquakes] Updated: ${_count} events`);
+        return true;
       } catch (e) {
         console.warn('[Data:Earthquakes] Fetch error:', e);
         _lastError = e?.message || 'Earthquake source unavailable';
+        return false;
       }
     },
 
-    async destroy() {
-      _isActive = false;
+    getStats() {
+      return {
+        count: _count,
+        lastUpdate: _lastUpdate,
+        error: _lastError,
+      };
+    },
+
+    getStatus() {
+      return {
+        count: _count,
+        lastUpdate: _lastUpdate,
+        error: _lastError,
+        status: _lastError ? 'error' : 'ready',
+      };
+    },
+
+    getRecords() {
+      return _records.map((r, i) => mapAnalystRecord(r, i));
+    },
+
+    async destroy(viewer) {
+      _enabled = false;
       if (_viewer && _dataSource) {
         try {
           _viewer.dataSources.remove(_dataSource, true);
@@ -162,23 +209,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
         overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
         overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
       } catch (_) {}
-    },
-
-    getRecords() {
-      return _records.map((r, i) => mapAnalystRecord(r, i));
-    },
-
-    getStatus() {
-      const isOk = !_lastError;
-      return {
-        status: isOk ? 'active' : 'error',
-        disposition: isOk ? 'active' : 'error',
-        state: isOk ? 'active' : 'error',
-        count: _count,
-        error: _lastError,
-        ready: true,
-        source: 'Kandilli / AFAD',
-      };
+      return true;
     },
   };
 }
