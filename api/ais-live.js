@@ -2,7 +2,6 @@ import WebSocket from 'ws';
 
 // Sunucu çalıştığı sürece toplanan gemileri hafızada tutar
 const vesselCache = new Map();
-let isConnecting = false;
 let globalWs = null;
 
 function ensureWebSocket(apiKey) {
@@ -14,13 +13,13 @@ function ensureWebSocket(apiKey) {
     globalWs = new WebSocket('wss://stream.aisstream.io/v0/stream');
 
     globalWs.on('open', () => {
-      // Türkiye çevresi: Ege, Akdeniz, Marmara, Karadeniz
+      // Akdeniz, Ege, Karadeniz, Marmara, Hazar Denizi, Mısır/Süveyş ve İtalya'yı kapsayan tam vizör alanı
       const subscriptionMessage = {
         Apikey: apiKey,
         BoundingBoxes: [
           [
-            [34.0, 24.0], // Güneybatı: Akdeniz / Girit
-            [43.5, 42.5], // Kuzeydoğu: Karadeniz / Gürcistan sınırı
+            [28.0, -5.0],  // Güneybatı: Cezayir, Fas, Cebelitarık, Mısır/Süveyş hattı
+            [47.5, 55.0],  // Kuzeydoğu: İtalya, Karadeniz, Gürcistan, Hazar Denizi / Azerbaycan
           ],
         ],
         FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
@@ -80,12 +79,12 @@ export default async function handler(req, res) {
   const API_KEY = '73adfb7c69e8837e41aa7b8cb8e4dc96906791b8';
   ensureWebSocket(API_KEY);
 
-  // İlk açılışta soketin ilk verileri alması için 2 saniye dinle
-  await new Promise((r) => setTimeout(r, 2000));
+  // İlk bağlantıda verilerin hızla dolması için 4.5 saniye dinle
+  await new Promise((r) => setTimeout(r, 4500));
 
-  // Son 45 dakika içinde sinyal vermiş tüm gemileri tut
+  // Son 60 dakika içinde sinyal veren tüm aktif gemileri hafızada tut
   const now = Date.now();
-  const activeCutoff = now - 45 * 60 * 1000;
+  const activeCutoff = now - 60 * 60 * 1000;
   for (const [mmsi, vessel] of vesselCache.entries()) {
     if (vessel.timestamp < activeCutoff) {
       vesselCache.delete(mmsi);
