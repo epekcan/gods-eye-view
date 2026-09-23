@@ -197,15 +197,37 @@ export function createAdsbLolSource({
 export function createAisStreamSource({
   fetchImpl = defaultFetch,
   apiUrl = '/api/ais-live',
-  origin = () => globalThis.location?.origin || 'http://localhost',
+  origin = () => globalThis.location?.origin || '',
 } = {}) {
   return {
     label: 'AISStream',
     async getSnapshot({ maxRows = 12000 } = {}, { signal } = {}) {
+      const url = `${origin()}${apiUrl}`;
+      const { response, payload } = await readResponse(
+        fetchImpl,
+        url,
+        { signal },
+        'AISStream',
+      );
+
+      if (!response.ok) throw httpError(response, 'AISStream');
+
+      const rawRecords = Array.isArray(payload?.records) ? payload.records : [];
+      const normalizedRecords = rawRecords.map((v) => ({
+        mmsi: String(v.mmsi || ''),
+        name: String(v.name || `VESSEL-${v.mmsi}`).trim(),
+        latitude: Number(v.lat),
+        longitude: Number(v.lon),
+        speedKnots: Number(v.sog || 0),
+        headingDeg: Number(v.hdg || v.cog || 0),
+        courseDeg: Number(v.cog || 0),
+        timestampMs: v.timestamp || Date.now(),
+      })).filter((v) => Number.isFinite(v.latitude) && Number.isFinite(v.longitude));
+
       return {
-        records: [],
-        timestamp: Date.now(),
-        status: 200,
+        records: normalizedRecords,
+        timestamp: payload?.timestamp || Date.now(),
+        status: response.status,
       };
     },
     async getTrack(reference, { signal } = {}) {
