@@ -1,14 +1,11 @@
 import WebSocket from 'ws';
 
 export default async function handler(req, res) {
-  // CORS başlıkları
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   const API_KEY = '73adfb7c69e8837e41aa7b8cb8e4dc96906791b8';
 
@@ -17,33 +14,24 @@ export default async function handler(req, res) {
     let ws;
 
     const timeout = setTimeout(() => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-      const records = Array.from(vessels.values());
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close();
       res.status(200).json({
-        records,
+        records: Array.from(vessels.values()),
         timestamp: Date.now(),
         status: 200,
       });
       resolve();
-    }, 3500); // 3.5 saniye boyunca Türkiye denizlerindeki gemileri toplar
+    }, 3500);
 
     try {
       ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
 
       ws.on('open', () => {
-        const subscriptionMessage = {
+        ws.send(JSON.stringify({
           Apikey: API_KEY,
-          BoundingBoxes: [
-            [
-              [35.0, 25.0], // Ege, Akdeniz, Karadeniz ve Boğazlar (Güneybatı: [lat, lon])
-              [42.5, 42.0], // Kuzeydoğu: [lat, lon]
-            ],
-          ],
+          BoundingBoxes: [[[35.0, 25.0], [42.5, 42.0]]],
           FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
-        };
-        ws.send(JSON.stringify(subscriptionMessage));
+        }));
       });
 
       ws.on('message', (data) => {
@@ -64,28 +52,14 @@ export default async function handler(req, res) {
               hdg: pos?.TrueHeading ?? pos?.Cog ?? 0,
               timestamp: Date.now(),
             };
-
-            if (meta?.latitude != null && meta?.longitude != null) {
-              current.lat = meta.latitude;
-              current.lon = meta.longitude;
-            } else if (pos?.Latitude != null && pos?.Longitude != null) {
-              current.lat = pos.Latitude;
-              current.lon = pos.Longitude;
-            }
-
-            if (current.lat && current.lon) {
-              vessels.set(mmsi, current);
-            }
+            if (current.lat && current.lon) vessels.set(mmsi, current);
           }
-        } catch (_) {
-          // JSON ayrıştırma hatalarını yut
-        }
+        } catch (_) {}
       });
 
-      ws.on('error', (err) => {
+      ws.on('error', () => {
         clearTimeout(timeout);
-        const records = Array.from(vessels.values());
-        res.status(200).json({ records, timestamp: Date.now(), status: 200, error: err.message });
+        res.status(200).json({ records: Array.from(vessels.values()), timestamp: Date.now(), status: 200 });
         resolve();
       });
     } catch (err) {
