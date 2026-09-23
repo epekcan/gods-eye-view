@@ -8,230 +8,161 @@ import {
   selectEarthquakeOverlayCohort,
   mapAnalystRecord,
 } from './model.js';
-export * from './model.js';
+
 export { createUsgsEarthquakeSource } from './source.js';
 
-/** Own one earthquake display and its refresh lifecycle. */
 export function createEarthquakesLayer({ source, overlayHost } = {}) {
-  if (typeof source?.getSnapshot !== 'function')
+  if (!source || typeof source.getSnapshot !== 'function')
     throw new TypeError('Earthquakes require a snapshot source');
   if (!overlayHost) throw new TypeError('Earthquakes require an overlay host');
+
   let _viewer = null;
-  let _request = null;
   let _dataSource = null;
   let _count = 0;
-  let _lastUpdate = null;
   let _lastError = null;
-  let _enabled = false;
+  let _records = [];
 
-  const layer = {
+  return {
     id: 'earthquakes',
-    name: 'Depremler',
-    icon: '🌋',
-    source: 'Kandilli / AFAD',
-    updateInterval: 60000,
+    label: 'Depremler',
 
-    init(viewer) {
+    async init(viewer) {
       if (_viewer) throw new Error('Earthquake layer is already initialized');
       _viewer = viewer;
       _dataSource = new Cesium.CustomDataSource('earthquakes');
+      await viewer.dataSources.add(_dataSource);
       _dataSource.show = false;
-      viewer.dataSources.add(_dataSource);
-      _count = 0;
-      _lastUpdate = null;
-      _lastError = null;
-      _enabled = false;
       overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
       console.log('[Data:Earthquakes] Initialized');
     },
 
-    enable(viewer) {
-      _enabled = true;
+    show() {
       if (_dataSource) _dataSource.show = true;
       overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, true);
     },
 
-    disable(viewer) {
-      _request?.abort();
-      _request = null;
-      _enabled = false;
+    hide() {
       if (_dataSource) _dataSource.show = false;
       overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
       overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
     },
 
-    async update(viewer) {
-      if (!_enabled || !_dataSource) return false;
-      _request?.abort();
-      const request = new AbortController();
-      _request = request;
+    async update({ signal } = {}) {
       try {
-        const rows = await source.getSnapshot({ signal: request.signal });
-        if (request.signal.aborted || _request !== request || !_enabled)
-          return false;
+        const rows = await source.getSnapshot({ signal });
+        _records = rows;
+        _count = rows.length;
+        _lastError = null;
 
-        const nextEntities = [];
-        let count = 0;
-        const overlayEntries = [];
+        if (_dataSource) {
+          _dataSource.entities.removeAll();
+          const overlayEntries = [];
 
-        for (const {
-          stableId,
-          usgsId,
-          lon,
-          lat,
-          depthKm,
-          mag,
-          place,
-          time,
-        } of rows) {
-          count++;
-          const baseRadius = Math.pow(2, mag) * 1000;
-          const color = depthColor(depthKm || 0);
-          const isSignificant = mag >= 5.0;
-          const fillAlpha = isSignificant ? 0.45 : 0.35;
-          const outlineAlpha = isSignificant ? 1.0 : 0.85;
+          for (const [index, row] of rows.entries()) {
+            const { stableId, lon, lat, depthKm, mag, place } = row;
+            const groundPos = Cesium.Cartesian3.fromDegrees(lon, lat, 0);
+            const calloutHeight = Math.max(25000, (mag || 2.0) * 35000); // Büyüklüğe göre yükselen dikey çizgi
+            const elevatedPos = Cesium.Cartesian3.fromDegrees(lon, lat, calloutHeight);
+            const color = depthColor(depthKm || 10);
 
-          const position = Cesium.Cartesian3.fromDegrees(lon, lat);
-          nextEntities.push(
-            new Cesium.Entity({
+            // 1. Zemin Çemberi / Darbe Halkası
+            _dataSource.entities.add({
               id: `earthquake:${stableId}`,
-              position,
-              point: {
-                pixelSize: Math.max(8, Math.min(22, mag * 3.0)),
-                color: color.withAlpha(0.95),
-                outlineColor: Cesium.Color.WHITE.withAlpha(0.9),
-                outlineWidth: 2,
-                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                disableDepthTestDistance: Number.POSITIVE_INFINITY, // Her yükseklikte arazinin üstünde net görünür
-              },
+              position: groundPos,
               ellipse: {
-                semiMajorAxis: Math.max(baseRadius, 15000),
-                semiMinorAxis: Math.max(baseRadius, 15000),
-                material: new Cesium.ColorMaterialProperty(
-                  color.withAlpha(fillAlpha),
-                ),
+                semiMajorAxis: Math.max(12000, (mag || 2.0) * 16000),
+                semiMinorAxis: Math.max(12000, (mag || 2.0) * 16000),
+                material: color.withAlpha(0.35),
                 outline: true,
-                outlineColor: color.withAlpha(outlineAlpha),
-                outlineWidth: isSignificant ? 2.5 : 1.5,
-                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                classificationType: Cesium.ClassificationType.BOTH, // Hem arazi kabartmasına hem 3D modellere doğrudan kaplar
+                outlineColor: color.withAlpha(0.85),
+                outlineWidth: 2,
+                height: 0,
               },
-              properties: {
-                usgsId,
-                mag,
-                place,
-                time,
-                depth: depthKm,
-              },
-            }),
-          );
-          overlayEntries.push(
-            createEarthquakeOverlayEntry({
-              id: String(stableId),
-              position,
-              magnitude: mag,
-              accent: color.toCssColorString(),
-            }),
-          );
-        }
+            });
 
-        _dataSource.entities.removeAll();
-        for (const entity of nextEntities) _dataSource.entities.add(entity);
-        if (_enabled) {
+            // 2. Dikey Callout Çizgisi (Zeminden göğe uzanan hat)
+            _dataSource.entities.add({
+              id: `earthquake-stem:${stableId}`,
+              polyline: {
+                positions: [groundPos, elevatedPos],
+                width: 2,
+                material: new Cesium.PolylineGlowMaterialProperty({
+                  glowPower: 0.25,
+                  color: color.withAlpha(0.9),
+                }),
+              },
+            });
+
+            // 3. Tepe Noktası & Etiket
+            _dataSource.entities.add({
+              id: `earthquake-label:${stableId}`,
+              position: elevatedPos,
+              point: {
+                pixelSize: Math.max(6, Math.min(14, (mag || 2) * 2.2)),
+                color: color,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 1,
+              },
+              label: {
+                text: `M${mag?.toFixed(1)} ${place ? '· ' + place.split('(')[0].trim() : ''}`,
+                font: '11px monospace',
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                fillColor: Cesium.Color.WHITE,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 2,
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                pixelOffset: new Cesium.Cartesian2(0, -9),
+                distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 4500000), // Yakınlaşınca okunur
+              },
+            });
+
+            overlayEntries.push(
+              createEarthquakeOverlayEntry({
+                id: stableId,
+                position: groundPos,
+                magnitude: mag,
+                accent: color.toCssColorString(),
+                place,
+              })
+            );
+          }
+
           overlayHost.setEntries(
             EARTHQUAKE_OVERLAY_SOURCE_ID,
             selectEarthquakeOverlayCohort(overlayEntries),
             {
               cohortLimit: EARTHQUAKE_OVERLAY_COHORT_LIMIT,
               collisionCapacity: EARTHQUAKE_OVERLAY_COLLISION_CAPACITY,
-              moving: false,
-            },
+            }
           );
         }
 
-        _count = count;
-        _lastUpdate = Date.now();
-        _lastError = null;
-        console.log(`[Data:Earthquakes] Updated: ${_count} events (M1.0+)`);
-        return true;
+        console.log(`[Data:Earthquakes] Updated: ${_count} events`);
       } catch (e) {
-        if (request.signal.aborted || _request !== request || !_enabled)
-          return false;
         console.warn('[Data:Earthquakes] Fetch error:', e);
         _lastError = e?.message || 'Earthquake source unavailable';
-        return false;
-      } finally {
-        if (_request === request) _request = null;
       }
     },
 
-    destroy(viewer = _viewer) {
-      _request?.abort();
-      _request = null;
+    destroy() {
+      if (_viewer && _dataSource) {
+        _viewer.dataSources.remove(_dataSource, true);
+      }
+      _dataSource = null;
       _viewer = null;
-      _enabled = false;
       overlayHost.clearSource(EARTHQUAKE_OVERLAY_SOURCE_ID);
       overlayHost.setVisible(EARTHQUAKE_OVERLAY_SOURCE_ID, false);
-      if (_dataSource) {
-        viewer.dataSources.remove(_dataSource, true);
-        _dataSource = null;
-      }
-      _count = 0;
-      _lastUpdate = null;
-      _lastError = null;
     },
 
-    /**
-     * Snapshot the layer's in-memory earthquake records as plain JSON-safe
-     * objects for the analyst query engine. On-demand only (called at most
-     * once per spoken query) — zero per-frame cost, no listeners, no caching.
-     * Returns [] while the layer is disabled or empty.
-     * @param {number} [maxCount=2000] - Maximum records to return (truncation).
-     * @returns {Array<Object>} See mapAnalystRecord for the record shape.
-     */
-    getAnalystRecords(maxCount = 2000) {
-      if (!_dataSource || !_dataSource.show) return [];
-      const entities = _dataSource.entities.values;
-      if (!entities.length) return [];
-      const limit = Number.isFinite(maxCount)
-        ? Math.max(1, Math.floor(maxCount))
-        : 2000;
-      const now = Cesium.JulianDate.now();
-      const result = [];
-      for (const entity of entities) {
-        if (result.length >= limit) break;
-        const cartesian = entity.position
-          ? entity.position.getValue(now)
-          : null;
-        const carto = cartesian
-          ? Cesium.Cartographic.fromCartesian(cartesian)
-          : null;
-        const p = entity.properties;
-        result.push(
-          mapAnalystRecord(
-            {
-              id: p?.usgsId?.getValue(now) ?? null,
-              mag: p?.mag?.getValue(now),
-              place: p?.place?.getValue(now),
-              time: p?.time?.getValue(now),
-              depth: p?.depth?.getValue(now),
-              lat: carto ? Cesium.Math.toDegrees(carto.latitude) : null,
-              lon: carto ? Cesium.Math.toDegrees(carto.longitude) : null,
-            },
-            result.length,
-          ),
-        );
-      }
-      return result;
+    getRecords() {
+      return _records.map((r, i) => mapAnalystRecord(r, i));
     },
 
-    getStats() {
+    getStatus() {
       return {
         count: _count,
-        lastUpdate: _lastUpdate,
         error: _lastError,
       };
     },
   };
-  return layer;
 }

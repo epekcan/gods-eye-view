@@ -21,6 +21,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
   let _count = 0;
   let _lastError = null;
   let _records = [];
+  let _lastUpdatedMs = Date.now();
 
   return {
     id: 'earthquakes',
@@ -53,6 +54,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
         _records = rows;
         _count = rows.length;
         _lastError = null;
+        _lastUpdatedMs = Date.now();
 
         if (_dataSource) {
           _dataSource.entities.removeAll();
@@ -61,11 +63,11 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
           for (const [index, row] of rows.entries()) {
             const { stableId, lon, lat, depthKm, mag, place } = row;
             const groundPos = Cesium.Cartesian3.fromDegrees(lon, lat, 0);
-            const calloutHeight = Math.max(25000, (mag || 2.0) * 35000); // Büyüklüğe göre yükselen dikey çizgi
+            const calloutHeight = Math.max(25000, (mag || 2.0) * 35000); // Büyüklüğe göre yükselen dikey hat
             const elevatedPos = Cesium.Cartesian3.fromDegrees(lon, lat, calloutHeight);
             const color = depthColor(depthKm || 10);
 
-            // 1. Zemin Çemberi / Darbe Halkası
+            // 1. Zemin Çemberi / Dalga Halkası
             _dataSource.entities.add({
               id: `earthquake:${stableId}`,
               position: groundPos,
@@ -80,7 +82,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
               },
             });
 
-            // 2. Dikey Callout Çizgisi (Zeminden göğe uzanan hat)
+            // 2. Dikey Callout Çizgisi (Deprem derinlik/şiddet sütunu)
             _dataSource.entities.add({
               id: `earthquake-stem:${stableId}`,
               polyline: {
@@ -112,7 +114,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
                 outlineWidth: 2,
                 verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
                 pixelOffset: new Cesium.Cartesian2(0, -9),
-                distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 4500000), // Yakınlaşınca okunur
+                distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 4500000),
               },
             });
 
@@ -160,8 +162,12 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
 
     getStatus() {
       return {
+        status: _lastError ? 'error' : 'ready',
+        disposition: _lastError ? 'error' : 'ready',
         count: _count,
         error: _lastError,
+        observedAtMs: _lastUpdatedMs,
+        source: 'Kandilli / AFAD',
       };
     },
   };
