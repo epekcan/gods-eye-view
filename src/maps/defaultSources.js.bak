@@ -86,15 +86,15 @@ function createHgmFizikiImagery() {
   return provider;
 }
 
-/** İBB Harita İstanbul Resmi Ortofoto / Uydu Sağlayıcısı */
+/** İBB Harita / Basemap Sağlayıcısı (Vercel Proxy Üzerinden) */
 function createIbbImagery() {
   const provider = new Cesium.UrlTemplateImageryProvider({
-    url: '/ibb-ortofoto/cbsc2/UYDU/Layers/_alllayers/L{arcLevel}/R{arcRow}/C{arcCol}.jpg',
+    url: '/api/ibb-basemap?z={z}&x={x}&y={y}',
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(27.8, 40.7, 29.9, 41.6),
     minimumLevel: 10,
     maximumLevel: 19,
-    credit: 'İBB İstanbul Ortofoto',
+    credit: 'İBB Harita İstanbul',
   });
   provider.errorEvent.addEventListener((err) => { err.retry = false; });
   return provider;
