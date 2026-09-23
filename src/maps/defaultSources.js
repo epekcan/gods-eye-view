@@ -12,18 +12,20 @@ import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
 
 const HGM_API_KEY = 'rXKdDZxXgj2hgFspEC4BKG4HMittQ0Y6';
 
-/** HGM Hibrit Uydu: Açık Kaynak OSM Tabanı + HGM Resmi Yol/Cadde Çizgileri */
+/** HGM Hibrit Uydu: Esri Uydu + HGM Resmi Yol/Cadde Çizgileri (Doğrudan Atlas Servisi) */
 class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   constructor() {
     super({
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       minimumLevel: 5,
       maximumLevel: 18,
-      credit: 'OpenStreetMap contributors + Harita Genel Müdürlüğü (HGM) Yol Ağı',
+      credit: 'Esri World Imagery + Harita Genel Müdürlüğü (HGM)',
     });
 
-    this._hgmPattern = `/hgm-servis/harita/yolorta_uydu/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`;
+    this._hgmPattern = `https://atlas.harita.gov.tr/webservis/harita/yolorta_uydu/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`;
     this._turkeyRect = Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2);
+
+    this.errorEvent.addEventListener((err) => { err.retry = false; });
   }
 
   requestImage(x, y, level) {
@@ -34,7 +36,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
       return super.requestImage(x, y, level);
     }
 
-    const osmUrl = `https://tile.openstreetmap.org/${level}/${x}/${y}.png`;
+    const esriUrl = `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${level}/${y}/${x}`;
     const hgmUrl = this._hgmPattern
       .replace('{z}', String(level))
       .replace('{x}', String(x))
@@ -49,7 +51,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
         img.src = url;
       });
 
-    return Promise.all([loadImg(osmUrl), loadImg(hgmUrl)]).then(([baseImg, hgmImg]) => {
+    return Promise.all([loadImg(esriUrl), loadImg(hgmUrl)]).then(([baseImg, hgmImg]) => {
       if (!baseImg) return undefined;
       if (!hgmImg) return baseImg;
 
@@ -70,19 +72,23 @@ function createHgmUyduImagery() {
   return new HgmHybridImageryProvider();
 }
 
+/** HGM Fiziki Harita Sağlayıcısı (Doğrudan Atlas Servisi) */
 function createHgmFizikiImagery() {
-  return new Cesium.UrlTemplateImageryProvider({
-    url: `/hgm-servis/hgmrasterhrt//fiziki/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`,
+  const provider = new Cesium.UrlTemplateImageryProvider({
+    url: `https://atlas.harita.gov.tr/webservis/hgmrasterhrt/fiziki/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`,
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2),
     minimumLevel: 5,
     maximumLevel: 18,
     credit: 'Harita Genel Müdürlüğü (HGM) Fiziki',
   });
+  provider.errorEvent.addEventListener((err) => { err.retry = false; });
+  return provider;
 }
 
+/** İBB Harita İstanbul Resmi Ortofoto / Uydu Sağlayıcısı */
 function createIbbImagery() {
-  return new Cesium.UrlTemplateImageryProvider({
+  const provider = new Cesium.UrlTemplateImageryProvider({
     url: '/ibb-ortofoto/cbsc2/UYDU/Layers/_alllayers/L{arcLevel}/R{arcRow}/C{arcCol}.jpg',
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(27.8, 40.7, 29.9, 41.6),
@@ -90,9 +96,10 @@ function createIbbImagery() {
     maximumLevel: 19,
     credit: 'İBB İstanbul Ortofoto',
   });
+  provider.errorEvent.addEventListener((err) => { err.retry = false; });
+  return provider;
 }
 
-/** Select sources and setup guidance without putting provider branches in the controller. */
 export function createDefaultMapSources({
   googleTileset = null,
   cesiumToken = '',
@@ -108,13 +115,15 @@ export function createDefaultMapSources({
       : createKeylessTerrain,
   };
 
-  // Tüm harita sağlayıcılarında Level 0-4 isteklerini güvenli şekilde sınırla
-  const wrapImageryWithMinLevel = (imageryFn) => {
+  const wrapImagery = (imageryFn) => {
     return (...args) => {
       const provider = imageryFn(...args);
       if (provider && typeof provider === 'object') {
         if (provider.minimumLevel === undefined || provider.minimumLevel < 5) {
           provider.minimumLevel = 5;
+        }
+        if (typeof provider.errorEvent?.addEventListener === 'function') {
+          provider.errorEvent.addEventListener((err) => { err.retry = false; });
         }
       }
       return provider;
@@ -130,9 +139,7 @@ export function createDefaultMapSources({
       const common = {
         descriptor,
         available: !descriptor.requiresIon || hasIon,
-        unavailableReason: descriptor.requiresIon
-          ? keySetupRequirement('cesium-ion')
-          : null,
+        unavailableReason: descriptor.requiresIon ? keySetupRequirement('cesium-ion') : null,
       };
       if (descriptor.kind === 'photoreal')
         return {
@@ -155,8 +162,7 @@ export function createDefaultMapSources({
                   ? createHgmFizikiImagery
                   : createEsriImagery;
 
-      // Sağlayıcıyı sarmalayarak minimum zoom seviyesini zorunlu kılıyoruz
-      imagery = wrapImageryWithMinLevel(imagery);
+      imagery = wrapImagery(imagery);
 
       return {
         ...common,
@@ -165,15 +171,8 @@ export function createDefaultMapSources({
         ...(descriptor.id === 'esri-imagery'
           ? {
               credit: ESRI_ATTRIBUTION_HTML,
-              constructionFallback: {
-                id: 'osm',
-                message: 'Esri Satellite is unavailable; using OSM',
-              },
-              tileFailureFallback: {
-                id: 'osm',
-                threshold: 2,
-                message: 'Esri Satellite tile requests failed; using OSM',
-              },
+              constructionFallback: { id: 'osm', message: 'Esri Satellite is unavailable; using OSM' },
+              tileFailureFallback: { id: 'osm', threshold: 2, message: 'Esri Satellite tile requests failed; using OSM' },
             }
           : {}),
       };

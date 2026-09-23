@@ -17,7 +17,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   constructor() {
     super({
       url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      minimumLevel: 5, // Düşük zoom seviyelerinde dünya isteği atılmasını engeller
+      minimumLevel: 5,
       maximumLevel: 18,
       credit: 'OpenStreetMap contributors + Harita Genel Müdürlüğü (HGM) Yol Ağı',
     });
@@ -30,7 +30,6 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
     const tileRect = this.tilingScheme.tileXYToRectangle(x, y, level);
     const inTurkey = Cesium.Rectangle.intersection(tileRect, this._turkeyRect);
 
-    // Türkiye dışı veya düşük zoom ise standart OSM karesini al
     if (!inTurkey || level < 5 || level > 18) {
       return super.requestImage(x, y, level);
     }
@@ -93,6 +92,7 @@ function createIbbImagery() {
   });
 }
 
+/** Select sources and setup guidance without putting provider branches in the controller. */
 export function createDefaultMapSources({
   googleTileset = null,
   cesiumToken = '',
@@ -107,6 +107,20 @@ export function createDefaultMapSources({
       ? (request) => createWorldTerrain(ionToken, request)
       : createKeylessTerrain,
   };
+
+  // Tüm harita sağlayıcılarında Level 0-4 isteklerini güvenli şekilde sınırla
+  const wrapImageryWithMinLevel = (imageryFn) => {
+    return (...args) => {
+      const provider = imageryFn(...args);
+      if (provider && typeof provider === 'object') {
+        if (provider.minimumLevel === undefined || provider.minimumLevel < 5) {
+          provider.minimumLevel = 5;
+        }
+      }
+      return provider;
+    };
+  };
+
   return {
     defaultId: googleTileset ? 'photoreal' : 'esri-imagery',
     unknownId: 'photoreal',
@@ -128,7 +142,7 @@ export function createDefaultMapSources({
           tileset: googleTileset,
         };
 
-      const imagery =
+      let imagery =
         descriptor.kind === 'ion'
           ? () => createIonImagery(descriptor.style, ionToken)
           : descriptor.id === 'osm'
@@ -140,6 +154,9 @@ export function createDefaultMapSources({
                 : descriptor.id === 'hgm-fiziki'
                   ? createHgmFizikiImagery
                   : createEsriImagery;
+
+      // Sağlayıcıyı sarmalayarak minimum zoom seviyesini zorunlu kılıyoruz
+      imagery = wrapImageryWithMinLevel(imagery);
 
       return {
         ...common,
