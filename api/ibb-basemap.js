@@ -5,8 +5,8 @@ export default async function handler(req, res) {
       return res.status(400).send('Missing coordinates');
     }
 
-    // İBB basemap / tile servis uç noktası
-    const targetUrl = `https://basemap.ibb.gov.tr/eva/rest/services/IBB_Basemap/MapServer/tile/${z}/${y}/${x}`;
+    // Doğru İBB Ortofoto (Uydu RGB) Servis Uç Noktası
+    const targetUrl = `https://cbsc2.ibb.gov.tr/arcgis/rest/services/Ortofoto/Ortofoto_2022_RGB/MapServer/tile/${z}/${y}/${x}`;
 
     const upstream = await fetch(targetUrl, {
       headers: {
@@ -16,10 +16,10 @@ export default async function handler(req, res) {
     });
 
     if (!upstream.ok) {
-      return res.status(upstream.status).send('IBB basemap upstream error');
+      return res.status(upstream.status).send('IBB Uydu upstream error');
     }
 
-    const contentType = upstream.headers.get('content-type') || 'image/png';
+    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
 
