@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/kandilli-api/:path*",
+      "destination": "https://api.orhanaydogdu.com.tr/:path*"
+    },
+    {
       "source": "/api/celestrak/:group",
       "destination": "https://celestrak.org/NORAD/elements/gp.php?GROUP=:group&FORMAT=tle"
     },
