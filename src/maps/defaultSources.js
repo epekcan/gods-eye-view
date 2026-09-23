@@ -67,16 +67,12 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   }
 }
 
-function createHgmUyduImagery() {
-  return new HgmHybridImageryProvider();
-}
-
-/** HGM Fiziki Raster Harita Sağlayıcısı */
 function createHgmFizikiImagery() {
   return new Cesium.UrlTemplateImageryProvider({
     url: `/hgm-servis/hgmrasterhrt//fiziki/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`,
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2),
+    minimumLevel: 5, // Küresel seviyelerde istek atılmasını engeller
     maximumLevel: 18,
     credit: 'Harita Genel Müdürlüğü (HGM) Fiziki',
   });
@@ -88,19 +84,9 @@ function createIbbImagery() {
     url: '/ibb-ortofoto/cbsc2/UYDU/Layers/_alllayers/L{arcLevel}/R{arcRow}/C{arcCol}.jpg',
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(27.8, 40.7, 29.9, 41.6),
+    minimumLevel: 10, // İBB İstanbul ortofotosu sadece yerel İstanbul zoomunda geçerlidir
     maximumLevel: 19,
-    credit: 'İstanbul Büyükşehir Belediyesi CBS - Harita İstanbul',
-    customTags: {
-      arcLevel: (imageryProvider, x, y, level) => {
-        return level < 10 ? '0' + level : String(level);
-      },
-      arcRow: (imageryProvider, x, y, level) => {
-        return y.toString(16).padStart(8, '0');
-      },
-      arcCol: (imageryProvider, x, y, level) => {
-        return x.toString(16).padStart(8, '0');
-      },
-    },
+    credit: 'İBB İstanbul Ortofoto',
   });
 }
 

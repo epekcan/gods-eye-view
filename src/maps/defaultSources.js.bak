@@ -12,44 +12,45 @@ import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
 
 const HGM_API_KEY = 'rXKdDZxXgj2hgFspEC4BKG4HMittQ0Y6';
 
-/** HGM Hibrit Uydu: Esri Uydu Tabanı + HGM Yol Çizgileri */
+/** HGM Hibrit Uydu: Esri Uydu + HGM Resmi Yol/Cadde Çizgileri */
 class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   constructor() {
     super({
-      // Alt zemin olarak Esri World Imagery servisi
       url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       maximumLevel: 18,
-      credit: 'Esri Satellite & HGM Yol Ağı',
+      credit: 'Esri World Imagery + Harita Genel Müdürlüğü (HGM) Yol Ağı',
     });
 
-    this._hgmUrl = `/hgm-servis/harita/yolorta_uydu/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`;
+    this._hgmPattern = `/hgm-servis/harita/yolorta_uydu/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`;
     this._turkeyRect = Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2);
   }
 
-  requestImage(x, y, level, request) {
-    const basePromise = super.requestImage(x, y, level, request);
-    if (!basePromise) return undefined;
-
-    // Türkiye dışında veya düşük zoom seviyelerinde sadece uydu görüntüsü döndür
+  requestImage(x, y, level) {
     const tileRect = this.tilingScheme.tileXYToRectangle(x, y, level);
     const inTurkey = Cesium.Rectangle.intersection(tileRect, this._turkeyRect);
 
+    // Türkiye dışı veya düşük zoom ise standart Esri karesini al
     if (!inTurkey || level < 6 || level > 18) {
-      return basePromise;
+      return super.requestImage(x, y, level);
     }
 
-    const hgmTile = this._hgmUrl
+    const esriUrl = `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${level}/${y}/${x}`;
+    const hgmUrl = this._hgmPattern
       .replace('{z}', String(level))
       .replace('{x}', String(x))
       .replace('{y}', String(y));
 
-    return Promise.allSettled([
-      basePromise,
-      Cesium.Resource.fetchImage({ url: hgmTile, request }),
-    ]).then(([baseRes, hgmRes]) => {
-      const baseImg = baseRes.status === 'fulfilled' ? baseRes.value : null;
-      const hgmImg = hgmRes.status === 'fulfilled' ? hgmRes.value : null;
+    // Cesium Request nesnesi yerine doğrudan Image yüklemesi yaparak scheduler'ı tamamen bypass ediyoruz
+    const loadImg = (url) =>
+      new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
 
+    return Promise.all([loadImg(esriUrl), loadImg(hgmUrl)]).then(([baseImg, hgmImg]) => {
       if (!baseImg) return undefined;
       if (!hgmImg) return baseImg;
 
@@ -58,9 +59,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
       canvas.height = baseImg.height || 256;
       const ctx = canvas.getContext('2d');
 
-      // 1. Zemin: Uydu Fotoğrafı
       ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
-      // 2. Üst Katman: HGM Resmi Yol/Sokak Çizgileri
       ctx.drawImage(hgmImg, 0, 0, canvas.width, canvas.height);
 
       return canvas;
