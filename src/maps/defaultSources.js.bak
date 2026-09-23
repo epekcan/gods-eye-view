@@ -72,11 +72,10 @@ function createHgmUyduImagery() {
   return new HgmHybridImageryProvider();
 }
 
-/** HGM Fiziki Harita Sağlayıcısı (Doğrudan Atlas Servisi) */
+/** HGM Fiziki Harita Sağlayıcısı (Vercel Proxy Üzerinden) */
 function createHgmFizikiImagery() {
   const provider = new Cesium.UrlTemplateImageryProvider({
-    // Fiziki haritalar için resmi WMS / TMS raster kök dizini
-    url: `https://atlas.harita.gov.tr/webservis/harita/fiziki/{z}/{x}/{y}.png?apikey=${HGM_API_KEY}`,
+    url: '/api/hgm-fiziki?z={z}&x={x}&y={y}',
     tilingScheme: new Cesium.WebMercatorTilingScheme(),
     rectangle: Cesium.Rectangle.fromDegrees(25.5, 35.8, 44.8, 42.2),
     minimumLevel: 5,
