@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/launches",
+      "destination": "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=30&mode=detailed"
+    },
+    {
       "source": "/api/celestrak/:group",
       "destination": "https://celestrak.org/NORAD/elements/gp.php?GROUP=:group&FORMAT=tle"
     },
@@ -22,7 +26,7 @@
     },
     {
       "source": "/api/proxy/adsb-live",
-      "destination": "https://opendata.adsb.fi/api/v2/lat/39/lon/35/dist/250"
+      "destination": "https://opendata.adsb.fi/api/v2/all"
     },
     {
       "source": "/api/proxy/adsb-hex/:hex",
