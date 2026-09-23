@@ -26,6 +26,7 @@ export function createApplicationViewer({ container, creditContainer, enableFlyI
     selectionIndicator: false,
     infoBox: false,
     baseLayer: false,
+    terrainProvider: new Cesium.EllipsoidTerrainProvider(), // 429 hatalarını tamamen keser
     creditContainer,
     msaaSamples: 4,
     contextOptions: { 
