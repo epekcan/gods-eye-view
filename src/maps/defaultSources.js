@@ -17,6 +17,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
   constructor() {
     super({
       url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      minimumLevel: 5, // Düşük zoom seviyelerinde dünya isteği atılmasını engeller
       maximumLevel: 18,
       credit: 'OpenStreetMap contributors + Harita Genel Müdürlüğü (HGM) Yol Ağı',
     });
@@ -30,7 +31,7 @@ class HgmHybridImageryProvider extends Cesium.UrlTemplateImageryProvider {
     const inTurkey = Cesium.Rectangle.intersection(tileRect, this._turkeyRect);
 
     // Türkiye dışı veya düşük zoom ise standart OSM karesini al
-    if (!inTurkey || level < 6 || level > 18) {
+    if (!inTurkey || level < 5 || level > 18) {
       return super.requestImage(x, y, level);
     }
 
@@ -81,7 +82,6 @@ function createHgmFizikiImagery() {
   });
 }
 
-/** İBB Harita İstanbul Resmi Ortofoto / Uydu Sağlayıcısı */
 function createIbbImagery() {
   return new Cesium.UrlTemplateImageryProvider({
     url: '/ibb-ortofoto/cbsc2/UYDU/Layers/_alllayers/L{arcLevel}/R{arcRow}/C{arcCol}.jpg',
@@ -93,7 +93,6 @@ function createIbbImagery() {
   });
 }
 
-/** Select sources and setup guidance without putting provider branches in the controller. */
 export function createDefaultMapSources({
   googleTileset = null,
   cesiumToken = '',
