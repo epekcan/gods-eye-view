@@ -1,0 +1,27 @@
+export default async function handler(req, res) {
+  try {
+    // Tüm Türkiye ve çevresini kapsayacak dairesel arama (tar1090)
+    // Enlem 39, Boylam 35, Yarıçap 350 deniz mili
+    const targetUrl = 'https://api.adsb.lol/v2/point/39.0/35.0/350';
+
+    const upstream = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      },
+    });
+
+    if (!upstream.ok) {
+      return res.status(upstream.status).send(`ADSB error: ${upstream.statusText}`);
+    }
+
+    const data = await upstream.json();
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3, s-maxage=3'); // Canlı takip için 3 saniye
+    
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(500).send(`Proxy Error: ${err.message}`);
+  }
+}

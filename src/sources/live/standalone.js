@@ -34,7 +34,7 @@ export function createOpenSkySource({
     async getSnapshot(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        '/api/proxy/adsb-live',
+        '/api/adsb-live', // PROXY KLASÖRÜ KALDIRILDI
         { signal },
         'Canlı Uçuşlar',
       );
@@ -102,7 +102,7 @@ export function createOpenSkySource({
       };
     },
     async getTrack(reference, { signal } = {}) {
-      const targetUrl = `/api/proxy/adsb-hex/${encodeURIComponent(reference)}`;
+      const targetUrl = `/api/adsb-hex/${encodeURIComponent(reference)}`; // PROXY KLASÖRÜ KALDIRILDI
       const { response, payload } = await readResponse(
         fetchImpl,
         targetUrl,
@@ -146,7 +146,7 @@ export function createAdsbLolSource({
     async getIdentities(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        '/api/proxy/adsb-mil',
+        '/api/adsb-mil', // PROXY KLASÖRÜ KALDIRILDI
         { signal },
         'Askeri Uçuşlar',
       );
@@ -156,7 +156,7 @@ export function createAdsbLolSource({
     async getSnapshot(_query = {}, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        '/api/proxy/adsb-mil',
+        '/api/adsb-mil', // PROXY KLASÖRÜ KALDIRILDI
         { signal },
         'Askeri Uçuşlar',
       );
@@ -174,7 +174,7 @@ export function createAdsbLolSource({
     async getTrack(reference, { signal } = {}) {
       const { response, payload } = await readResponse(
         fetchImpl,
-        `/api/proxy/adsb-hex/${encodeURIComponent(reference)}`,
+        `/api/adsb-hex/${encodeURIComponent(reference)}`, // PROXY KLASÖRÜ KALDIRILDI
         { signal },
         'Askeri Uçuşlar',
       );
